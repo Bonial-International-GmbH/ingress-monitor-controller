@@ -76,7 +76,11 @@ func (c *Controller) Run(stopCh <-chan struct{}) error {
 }
 
 func (c *Controller) onIngressAdded(obj interface{}) {
-	ingress := obj.(*v1beta1.Ingress)
+	ingress, err := extractIngressObject(obj)
+	if err != nil {
+		klog.Error(err)
+		return
+	}
 
 	klog.V(1).Infof(`received add event for ingress "%s/%s"`, ingress.Namespace, ingress.Name)
 
@@ -88,9 +92,18 @@ func (c *Controller) onIngressAdded(obj interface{}) {
 	}, delay)
 }
 
-func (c *Controller) onIngressUpdated(old, new interface{}) {
-	oldIngress := old.(*v1beta1.Ingress)
-	newIngress := new.(*v1beta1.Ingress)
+func (c *Controller) onIngressUpdated(oldObj, newObj interface{}) {
+	oldIngress, err := extractIngressObject(oldObj)
+	if err != nil {
+		klog.Error(err)
+		return
+	}
+
+	newIngress, err := extractIngressObject(newObj)
+	if err != nil {
+		klog.Error(err)
+		return
+	}
 
 	klog.V(1).Infof(`received update event for ingress "%s/%s"`, newIngress.Namespace, newIngress.Name)
 
@@ -103,7 +116,11 @@ func (c *Controller) onIngressUpdated(old, new interface{}) {
 }
 
 func (c *Controller) onIngressDeleted(obj interface{}) {
-	ingress := obj.(*v1beta1.Ingress)
+	ingress, err := extractIngressObject(obj)
+	if err != nil {
+		klog.Error(err)
+		return
+	}
 
 	klog.V(1).Infof(`received delete event for ingress "%s/%s"`, ingress.Namespace, ingress.Name)
 
@@ -143,12 +160,30 @@ func (c *Controller) handleError(err error, key interface{}) {
 	}
 
 	if c.queue.NumRequeues(key) < 5 {
-		klog.V(4).Infof("requeuing key %v for sync due to error: %v", key, err)
+		klog.V(4).Infof("requeuing key %s for sync due to error: %v", key, err)
 		c.queue.AddRateLimited(key)
 		return
 	}
 
 	c.queue.Forget(key)
 	utilruntime.HandleError(err)
-	klog.V(1).Infof("dropping key %v out of the queue due to error: %v", key, err)
+	klog.V(1).Infof("dropping key %s out of the queue due to error: %v", key, err)
+}
+
+// ingressObject will extract a *v1beta1.Ingress from the provided object. If
+// the ingress object cannot be extracted, this will return an error.
+func extractIngressObject(obj interface{}) (*v1beta1.Ingress, error) {
+	// In the case where an object was deleted but the watch deletion event was
+	// missed, the object is of type cache.DeletedFinalStateUnknown and
+	// contains an object that might be stale.
+	if d, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+		obj = d.Obj
+	}
+
+	ingress, ok := obj.(*v1beta1.Ingress)
+	if !ok {
+		return nil, errors.Errorf("expected to receive object of type %T, but got %T", &v1beta1.Ingress{}, obj)
+	}
+
+	return ingress, nil
 }

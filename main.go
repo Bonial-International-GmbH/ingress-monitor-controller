@@ -64,6 +64,8 @@ func main() {
 // Run sets up that controller and initiates the controller loop.
 func Run(options *config.Options) error {
 	if options.ProviderConfigFile != "" {
+		klog.V(1).Infof("loading provider config from %s", options.ProviderConfigFile)
+
 		providerConfig, err := config.ReadProviderConfig(options.ProviderConfigFile)
 		if err != nil {
 			return errors.Wrapf(err, "failed to load provider config from file")
@@ -80,7 +82,7 @@ func Run(options *config.Options) error {
 		return errors.Wrapf(err, "initializing kubernetes client failed")
 	}
 
-	klog.Infof("running with options: %+v", options)
+	klog.V(4).Infof("running with options: %+v", options)
 
 	svc, err := monitor.NewService(options)
 	if err != nil {

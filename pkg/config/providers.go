@@ -44,26 +44,95 @@ type Site24x7Config struct {
 // Site24x7MonitorDefaults define the monitor defaults that are used for each
 // monitor if not overridden explicitly via ingress annotations.
 type Site24x7MonitorDefaults struct {
-	AutoLocationProfile     bool                    `json:"autoLocationProfile"`
-	AutoNotificationProfile bool                    `json:"autoNotificationProfile"`
-	AutoThresholdProfile    bool                    `json:"autoThresholdProfile"`
-	AutoMonitorGroup        bool                    `json:"autoMonitorGroup"`
-	AutoUserGroup           bool                    `json:"autoUserGroup"`
-	MatchCase               bool                    `json:"matchCase"`
-	Timeout                 int                     `json:"timeout"`
-	CheckFrequency          string                  `json:"checkFrequency"`
-	HTTPMethod              string                  `json:"httpMethod"`
-	AuthUser                string                  `json:"authUser"`
-	AuthPass                string                  `json:"authPass"`
-	UserAgent               string                  `json:"userAgent"`
-	UseNameServer           bool                    `json:"useNameServer"`
-	LocationProfileID       string                  `json:"locationProfileID"`
-	NotificationProfileID   string                  `json:"notificationProfileID"`
-	ThresholdProfileID      string                  `json:"thresholdProfileID"`
-	MonitorGroupIDs         []string                `json:"monitorGroupIDs"`
-	UserGroupIDs            []string                `json:"userGroupIDs"`
-	Actions                 []site24x7api.ActionRef `json:"actions"`
-	CustomHeaders           []site24x7api.Header    `json:"customHeaders"`
+	// Actions configures default alert actions, where ActionID is the ID of
+	// the Site24x7 IT Automation action and AlertType has to be one of the
+	// values specified by the Site24x7 action rule constants:
+	// https://www.site24x7.com/help/api/#action_constants.
+	Actions []site24x7api.ActionRef `json:"actions"`
+
+	// AuthPass sets the default password for endpoints requiring basic auth.
+	AuthPass string `json:"authPass"`
+
+	// AuthUser sets the default user for endpoints requiring basic auth.
+	AuthUser string `json:"authUser"`
+
+	// AutoLocationProfile configures the behaviour for auto-detecting the
+	// location profile to use. If set to true, the first location profile
+	// returned by the Site24x7 API will be used. This only applies, if
+	// the default LocationProfileID is not set.
+	AutoLocationProfile bool `json:"autoLocationProfile"`
+
+	// AutoNotificationProfile configures the behaviour for auto-detecting the
+	// notification profile to use. If set to true, the first notificaiton
+	// profile returned by the Site24x7 API will be used. This only applies, if
+	// the default NotificationProfileID is not set.
+	AutoNotificationProfile bool `json:"autoNotificationProfile"`
+
+	// AutoThresholdProfile configures the behaviour for auto-detecting the
+	// threshold profile to use. If set to true, the first threshold profile
+	// returned by the Site24x7 API will be used. This only applies, if the
+	// default ThresholdProfileID is not set.
+	AutoThresholdProfile bool `json:"autoThresholdProfile"`
+
+	// AutoMonitorGroup configures the behaviour for auto-detecting the monitor
+	// group to use. If set to true, the first monitor group returned by the
+	// Site24x7 API will be used. This only applies, if the default
+	// MonitorGroupIDs is empty.
+	AutoMonitorGroup bool `json:"autoMonitorGroup"`
+
+	// AutoUserGroup configures the behaviour for auto-detecting the user group
+	// to use. If set to true, the first user group returned by the Site24x7
+	// API will be used. This only applies, if the default UserGroupIDs is
+	// empty.
+	AutoUserGroup bool `json:"autoUserGroup"`
+
+	// CheckFrequency configures the default check frequency. See
+	// https://www.site24x7.com/help/api/#check_interval for a list of valid
+	// values.
+	CheckFrequency string `json:"checkFrequency"`
+
+	// CustomHeaders configures additional custom HTTP headers to send with
+	// each check.
+	CustomHeaders []site24x7api.Header `json:"customHeaders"`
+
+	// HTTPMethod sets the default HTTP method to use for all checks. See
+	// https://www.site24x7.com/help/api/#http_methods for a list of valid
+	// values.
+	HTTPMethod string `json:"httpMethod"`
+
+	// LocationProfileID configures the ID of the default location profile used
+	// for all checks.
+	LocationProfileID string `json:"locationProfileID"`
+
+	// MatchCase configures keyword search. If true, keyword search will be
+	// case sensitive.
+	MatchCase bool `json:"matchCase"`
+
+	// MonitorGroupIDs configures the default monitor groups. The slice must
+	// contain valid monitor group IDs.
+	MonitorGroupIDs []string `json:"monitorGroupIDs"`
+
+	// NotificationProfileID configures the ID of the default notification
+	// profile used for all checks.
+	NotificationProfileID string `json:"notificationProfileID"`
+
+	// ThresholdProfileID configures the ID of the default threshold profile
+	// used for all checks.
+	ThresholdProfileID string `json:"thresholdProfileID"`
+
+	// Timeout configures the default timeout for connecting to the monitored
+	// website. Has to be in range 1-45.
+	Timeout int `json:"timeout"`
+
+	// UseNameServer configures whether to resolve DNS or not.
+	UseNameServer bool `json:"useNameServer"`
+
+	// UserAgent sets the default user agent string used by all checks.
+	UserAgent string `json:"userAgent"`
+
+	// UserGroupIDs configures the default user groups. The slice must contain
+	// valid user group IDs.
+	UserGroupIDs []string `json:"userGroupIDs"`
 }
 
 // NewDefaultProviderConfig creates a new default provider config.

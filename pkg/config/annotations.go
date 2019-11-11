@@ -9,10 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Global Annotations.
 const (
-	// Global Annotations
-	// ==================
-
 	// AnnotationEnabled controls whether a monitor is created for an ingress
 	// or not.
 	AnnotationEnabled = "ingress-monitor.bonial.com/enabled"
@@ -23,10 +21,10 @@ const (
 	// AnnotationPathOverride configures a custom path that should be monitored
 	// (e.g. "/health").
 	AnnotationPathOverride = "ingress-monitor.bonial.com/path-override"
+)
 
-	// Site24x7 Annotations
-	// ====================
-
+// Site24x7 Provider Annotations.
+const (
 	// AnnotationSite24x7Actions configures custom alert actions for this
 	// monitor. The value has to be a json array. Example:
 	//
@@ -104,6 +102,9 @@ const (
 // for parsing and defaulting annotation values.
 type Annotations map[string]string
 
+// String returns the string value of an annotation. If the annotations does
+// not exist, the optional default value will be returned, empty string
+// otherwise.
 func (a Annotations) String(name string, defaultValue ...string) string {
 	if val, ok := a[name]; ok {
 		return val
@@ -116,6 +117,9 @@ func (a Annotations) String(name string, defaultValue ...string) string {
 	return ""
 }
 
+// StringSlice returns the string slice of an annotation. The annotation value
+// is separated on commas. If the annotations does not exist, the optional
+// default value will be returned, nil otherwise.
 func (a Annotations) StringSlice(name string, defaultValue ...[]string) []string {
 	s := a.String(name)
 	if len(s) > 0 {
@@ -129,6 +133,9 @@ func (a Annotations) StringSlice(name string, defaultValue ...[]string) []string
 	return nil
 }
 
+// Bool returns the bool value of an annotation. If the annotations does not
+// exist, the optional default value will be returned, false otherwise. If the
+// annotation's value cannot be parsed as bool, false is returned.
 func (a Annotations) Bool(name string, defaultValue ...bool) bool {
 	if val, ok := a[name]; ok {
 		b, err := strconv.ParseBool(val)
@@ -146,6 +153,9 @@ func (a Annotations) Bool(name string, defaultValue ...bool) bool {
 	return false
 }
 
+// Int returns the int value of an annotation. If the annotations does not
+// exist, the optional default value will be returned, zero otherwise. If the
+// annotation's value cannot be parsed as int, zero is returned.
 func (a Annotations) Int(name string, defaultValue ...int) int {
 	if val, ok := a[name]; ok {
 		i, err := strconv.Atoi(val)
@@ -163,6 +173,9 @@ func (a Annotations) Int(name string, defaultValue ...int) int {
 	return 0
 }
 
+// JSON parses the value of the annotation into p. P must be a pointer. If the
+// annotation does not exist, p is not altered. JSON will return any errors
+// occuring during unmarshal operations.
 func (a Annotations) JSON(name string, p interface{}) error {
 	val, ok := a[name]
 	if !ok {
