@@ -47,7 +47,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&o.NoDelete, "no-delete", o.NoDelete, "If set, delete actions will only be printed but not executed. This is useful for debugging.")
 	cmd.Flags().DurationVar(&o.CreationDelay, "creation-delay", o.CreationDelay, "Duration to wait after an ingress is created before creating the monitor for it.")
 	cmd.Flags().DurationVar(&o.ResyncInterval, "resync-interval", o.ResyncInterval, "Duration after which to recheck all ingresses.")
-	cmd.Flags().StringVar(&o.NameTemplate, "name-template", o.NameTemplate, "The template to use for the monitor name.")
+	cmd.Flags().StringVar(&o.NameTemplate, "name-template", o.NameTemplate, "The template to use for the monitor name. Valid fields are: .IngressName, .Namespace.")
 	cmd.Flags().StringVar(&o.Namespace, "namespace", o.Namespace, "Namespace to watch. If empty, all namespaces are watched.")
 	cmd.Flags().StringVar(&o.ProviderConfigFile, "provider-config", o.ProviderConfigFile, "Location of the config file for the monitor providers.")
 	cmd.Flags().StringVar(&o.ProviderName, "provider", o.ProviderName, "The provider to use for creating monitors.")
@@ -56,7 +56,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 // Validate validates options.
 func (o *Options) Validate() error {
 	if o.CreationDelay < 0 {
-		return errors.Errorf("--delete-after has to be greater than or equal to 0s")
+		return errors.Errorf("--creation-delay has to be greater than or equal to 0s")
 	}
 
 	if o.ResyncInterval < 0 {

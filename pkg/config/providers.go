@@ -23,13 +23,26 @@ type ProviderConfig struct {
 	Site24x7 Site24x7Config `json:"site24x7"`
 }
 
+// Site24x7Config is the configration for the Site24x7 website monitor
+// provider.
 type Site24x7Config struct {
-	ClientID        string                  `json:"clientID"`
-	ClientSecret    string                  `json:"clientSecret"`
-	RefreshToken    string                  `json:"refreshToken"`
+	// ClientID is the OAuth2 client ID provided by Site24x7.
+	ClientID string `json:"clientID"`
+
+	// ClientSecret is the OAuth2 client secret provided by Site24x7.
+	ClientSecret string `json:"clientSecret"`
+
+	// RefreshToken is the OAuth2 refresh token provided by Site24x7.
+	RefreshToken string `json:"refreshToken"`
+
+	// MonitorDefaults contain defaults that apply to all monitors. The
+	// defaults can be overridden explicitly for each monitor via ingress
+	// annotations (see annotations.go for all available annotations).
 	MonitorDefaults Site24x7MonitorDefaults `json:"monitorDefaults"`
 }
 
+// Site24x7MonitorDefaults define the monitor defaults that are used for each
+// monitor if not overridden explicitly via ingress annotations.
 type Site24x7MonitorDefaults struct {
 	AutoLocationProfile     bool                    `json:"autoLocationProfile"`
 	AutoNotificationProfile bool                    `json:"autoNotificationProfile"`

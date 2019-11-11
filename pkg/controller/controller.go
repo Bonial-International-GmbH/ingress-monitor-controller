@@ -11,7 +11,6 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	extensionsv1beta1listers "k8s.io/client-go/listers/extensions/v1beta1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
@@ -22,7 +21,6 @@ type Controller struct {
 	client        kubernetes.Interface
 	queue         workqueue.RateLimitingInterface
 	informer      cache.SharedIndexInformer
-	lister        extensionsv1beta1listers.IngressLister
 	creationDelay time.Duration
 	service       monitor.Service
 }
@@ -36,11 +34,11 @@ func New(client kubernetes.Interface, svc monitor.Service, options *config.Optio
 	informer := cache.NewSharedIndexInformer(listWatcher, &v1beta1.Ingress{}, options.ResyncInterval, indexers)
 
 	c := &Controller{
-		client:   client,
-		service:  svc,
-		queue:    queue,
-		informer: informer,
-		lister:   extensionsv1beta1listers.NewIngressLister(informer.GetIndexer()),
+		client:        client,
+		creationDelay: options.CreationDelay,
+		service:       svc,
+		queue:         queue,
+		informer:      informer,
 	}
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{

@@ -74,7 +74,7 @@ func (b *builder) withModel(model *models.Monitor) *builder {
 	if b.err != nil {
 		return b
 	} else if m.ActionIDs == nil {
-		m.ActionIDs = d.ActionIDs
+		m.ActionIDs = d.Actions
 	}
 
 	b.monitor = m

@@ -19,7 +19,7 @@ func (e updateEvent) handle(s monitor.Service) error {
 	a := config.Annotations(e.newIngress.Annotations)
 
 	if a.Bool(config.AnnotationEnabled) {
-		return s.CreateOrUpdateMonitor(e.newIngress)
+		return s.EnsureMonitor(e.newIngress)
 	}
 
 	return s.DeleteMonitor(e.oldIngress)

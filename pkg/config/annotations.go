@@ -24,8 +24,8 @@ const (
 	// (e.g. "/health").
 	AnnotationPathOverride = "ingress-monitor.bonial.com/path-override"
 
-	// Site24x7 specific Annotations
-	// =============================
+	// Site24x7 Annotations
+	// ====================
 
 	// AnnotationSite24x7Actions configures custom alert actions for this
 	// monitor. The value has to be a json array. Example:

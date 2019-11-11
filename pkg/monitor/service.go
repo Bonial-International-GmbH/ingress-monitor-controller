@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/config"
+	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/ingress"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/models"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/provider"
 	"k8s.io/api/extensions/v1beta1"
@@ -11,7 +12,12 @@ import (
 // Service defines the interface for a service that takes care of creating,
 // updating or deleting monitors.
 type Service interface {
-	CreateOrUpdateMonitor(ingress *v1beta1.Ingress) error
+	// EnsureMonitor ensures that a monitor is in sync with the current ingress
+	// configuration. If the monitor does not exist, it will be created.
+	EnsureMonitor(ingress *v1beta1.Ingress) error
+
+	// DeleteMonitor deletes the monitor for an ingress. It must not be treated
+	// as an error if the monitor was already deleted.
 	DeleteMonitor(ingress *v1beta1.Ingress) error
 }
 
@@ -43,47 +49,32 @@ func NewService(options *config.Options) (Service, error) {
 	return s, nil
 }
 
-// CreateOrUpdateMonitor implements Service.
-func (s *service) CreateOrUpdateMonitor(ingress *v1beta1.Ingress) error {
-	if !isSupported(ingress) {
-		klog.V(1).Infof(`ingress "%s/%s" is not supported, not creating monitor`, ingress.Namespace, ingress.Name)
+// EnsureMonitor implements Service.
+func (s *service) EnsureMonitor(ing *v1beta1.Ingress) error {
+	err := ingress.Validate(ing)
+	if err != nil {
+		klog.V(1).Infof(`ingress "%s/%s" is not supported: %v`, ing.Namespace, ing.Name, err)
 		return nil
 	}
 
-	name, err := s.namer.Name(ingress)
+	name, err := s.namer.Name(ing)
 	if err != nil {
 		return err
 	}
 
-	url, err := buildURL(ingress)
+	url, err := ingress.BuildMonitorURL(ing)
 	if err != nil {
 		return err
 	}
-
-	klog.V(1).Infof("fetching monitor %q", name)
 
 	monitor, err := s.provider.Get(name)
 	if err == models.ErrMonitorNotFound {
-		monitor := &models.Monitor{
-			URL:         url,
-			Name:        name,
-			Annotations: ingress.Annotations,
-		}
-
-		klog.Infof("creating monitor %#v", monitor)
-
-		return s.provider.Create(monitor)
+		return s.createMonitor(name, url, ing.Annotations)
 	} else if err != nil {
 		return err
 	}
 
-	monitor.URL = url
-	monitor.Name = name
-	monitor.Annotations = ingress.Annotations
-
-	klog.Infof("updating monitor %#v", monitor)
-
-	return s.provider.Update(monitor)
+	return s.updateMonitor(monitor, name, url, ing.Annotations)
 }
 
 // DeleteMonitor implements Service.
@@ -98,13 +89,51 @@ func (s *service) DeleteMonitor(ingress *v1beta1.Ingress) error {
 		return nil
 	}
 
-	klog.Infof("deleting monitor %q", name)
+	return s.deleteMonitor(name)
+}
 
-	err = s.provider.Delete(name)
+func (s *service) createMonitor(name, url string, annotations map[string]string) error {
+	monitor := &models.Monitor{
+		URL:         url,
+		Name:        name,
+		Annotations: annotations,
+	}
+
+	err := s.provider.Create(monitor)
+	if err != nil {
+		return err
+	}
+
+	klog.Infof("monitor %q created", monitor.Name)
+
+	return nil
+}
+
+func (s *service) updateMonitor(monitor *models.Monitor, name, url string, annotations map[string]string) error {
+	monitor.URL = url
+	monitor.Name = name
+	monitor.Annotations = annotations
+
+	err := s.provider.Update(monitor)
+	if err != nil {
+		return err
+	}
+
+	klog.Infof("monitor %q updated", monitor.Name)
+
+	return nil
+}
+
+func (s *service) deleteMonitor(name string) error {
+	err := s.provider.Delete(name)
 	if err == models.ErrMonitorNotFound {
 		klog.V(1).Infof("monitor %q was already deleted", name)
 		return nil
+	} else if err != nil {
+		return err
 	}
 
-	return err
+	klog.Infof("monitor %q deleted", name)
+
+	return nil
 }
