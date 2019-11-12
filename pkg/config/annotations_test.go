@@ -18,36 +18,36 @@ func TestAnnotations(t *testing.T) {
 	}
 
 	// existent value
-	assert.Equal(t, "somestring", a.String("a"))
-	assert.Equal(t, true, a.Bool("b"))
-	assert.Equal(t, 42, a.Int("c"))
-	assert.Equal(t, []string{"foo", "bar", "baz"}, a.StringSlice("d"))
+	assert.Equal(t, "somestring", a.StringValue("a"))
+	assert.Equal(t, true, a.BoolValue("b"))
+	assert.Equal(t, 42, a.IntValue("c"))
+	assert.Equal(t, []string{"foo", "bar", "baz"}, a.StringSliceValue("d"))
 
 	// default fallback
-	assert.Equal(t, "thedefault", a.String("nonexistent", "thedefault"))
-	assert.Equal(t, true, a.Bool("nonexistent", true))
-	assert.Equal(t, 2, a.Int("nonexistent", 2))
-	assert.Equal(t, []string{"thedefault"}, a.StringSlice("nonexistent", []string{"thedefault"}))
+	assert.Equal(t, "thedefault", a.StringValue("nonexistent", "thedefault"))
+	assert.Equal(t, true, a.BoolValue("nonexistent", true))
+	assert.Equal(t, 2, a.IntValue("nonexistent", 2))
+	assert.Equal(t, []string{"thedefault"}, a.StringSliceValue("nonexistent", []string{"thedefault"}))
 
 	// unparsable bool/int
-	assert.Equal(t, false, a.Bool("invalidjson"))
-	assert.Equal(t, 0, a.Int("invalidjson"))
+	assert.Equal(t, false, a.BoolValue("invalidjson"))
+	assert.Equal(t, 0, a.IntValue("invalidjson"))
 
 	// zero value
-	assert.Equal(t, "", a.String("nonexistent"))
-	assert.Equal(t, false, a.Bool("nonexistent"))
-	assert.Equal(t, 0, a.Int("nonexistent"))
-	assert.Equal(t, []string(nil), a.StringSlice("nonexistent"))
+	assert.Equal(t, "", a.StringValue("nonexistent"))
+	assert.Equal(t, false, a.BoolValue("nonexistent"))
+	assert.Equal(t, 0, a.IntValue("nonexistent"))
+	assert.Equal(t, []string(nil), a.StringSliceValue("nonexistent"))
 
 	// json tests
 	m := map[string]string{}
-	require.NoError(t, a.JSON("e", &m))
+	require.NoError(t, a.ParseJSON("e", &m))
 	assert.Equal(t, map[string]string{"foo": "bar"}, m)
 
 	m = map[string]string{}
-	require.NoError(t, a.JSON("nonexistent", &m))
+	require.NoError(t, a.ParseJSON("nonexistent", &m))
 	assert.Equal(t, map[string]string{}, m)
 
 	m = map[string]string{}
-	require.Error(t, a.JSON("invalidjson", &m))
+	require.Error(t, a.ParseJSON("invalidjson", &m))
 }

@@ -72,7 +72,7 @@ func supportsTLS(ingress *v1beta1.Ingress) bool {
 func forceHTTPS(ingress *v1beta1.Ingress) bool {
 	a := config.Annotations(ingress.Annotations)
 
-	return a.Bool(config.AnnotationForceHTTPS) || a.Bool(nginxForceSSLRedirectAnnotation)
+	return a.BoolValue(config.AnnotationForceHTTPS) || a.BoolValue(nginxForceSSLRedirectAnnotation)
 }
 
 func containsWildcard(hostName string) bool {

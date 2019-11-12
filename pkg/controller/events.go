@@ -20,7 +20,7 @@ type updateEvent struct {
 func (e updateEvent) handle(s monitor.Service) error {
 	a := config.Annotations(e.newIngress.Annotations)
 
-	if a.Bool(config.AnnotationEnabled) {
+	if a.BoolValue(config.AnnotationEnabled) {
 		return s.EnsureMonitor(e.newIngress)
 	}
 

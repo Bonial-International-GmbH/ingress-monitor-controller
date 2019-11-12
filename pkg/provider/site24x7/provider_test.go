@@ -326,8 +326,9 @@ func newTestProvider(config config.Site24x7Config) (*Provider, *fake.Client) {
 	client := fake.NewClient()
 
 	provider := &Provider{
-		client: client,
-		config: config,
+		client:  client,
+		config:  config,
+		builder: newBuilder(client, config.MonitorDefaults),
 	}
 
 	return provider, client

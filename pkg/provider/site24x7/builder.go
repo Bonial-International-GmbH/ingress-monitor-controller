@@ -1,104 +1,87 @@
 package site24x7
 
 import (
-	"errors"
-
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/config"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/models"
 	site24x7 "github.com/Bonial-International-GmbH/site24x7-go"
 	site24x7api "github.com/Bonial-International-GmbH/site24x7-go/api"
-	"k8s.io/klog"
 )
 
 type builder struct {
 	client     site24x7.Client
 	defaults   config.Site24x7MonitorDefaults
-	monitor    *site24x7api.Monitor
-	defaulters []defaulter
-	err        error
+	finalizers []finalizer
 }
 
 func newBuilder(client site24x7.Client, defaults config.Site24x7MonitorDefaults) *builder {
-	return &builder{
+	b := &builder{
 		client:   client,
 		defaults: defaults,
 	}
-}
 
-func (b *builder) withDefaulters(defaulters ...defaulter) *builder {
-	if b.err != nil {
-		return b
+	b.finalizers = []finalizer{
+		b.finalizeLocationProfile,
+		b.finalizeNotificationProfile,
+		b.finalizeThresholdProfile,
+		b.finalizeMonitorGroup,
+		b.finalizeUserGroup,
 	}
-
-	b.defaulters = defaulters
 
 	return b
 }
 
-func (b *builder) withModel(model *models.Monitor) *builder {
-	if b.err != nil {
-		return b
+func (b *builder) FromModel(model *models.Monitor) (*site24x7api.Monitor, error) {
+	anno := model.Annotations
+	defaults := b.defaults
+
+	monitor := &site24x7api.Monitor{
+		Type:        "URL",
+		MonitorID:   model.ID,
+		DisplayName: model.Name,
+		Website:     model.URL,
 	}
 
-	a := model.Annotations
-	d := b.defaults
+	monitor.CheckFrequency = anno.StringValue(config.AnnotationSite24x7CheckFrequency, defaults.CheckFrequency)
+	monitor.HTTPMethod = anno.StringValue(config.AnnotationSite24x7HTTPMethod, defaults.HTTPMethod)
+	monitor.AuthUser = anno.StringValue(config.AnnotationSite24x7AuthUser, defaults.AuthUser)
+	monitor.AuthPass = anno.StringValue(config.AnnotationSite24x7AuthPass, defaults.AuthPass)
+	monitor.MatchCase = anno.BoolValue(config.AnnotationSite24x7MatchCase, defaults.MatchCase)
+	monitor.UserAgent = anno.StringValue(config.AnnotationSite24x7UserAgent, defaults.UserAgent)
+	monitor.Timeout = anno.IntValue(config.AnnotationSite24x7Timeout, defaults.Timeout)
+	monitor.UseNameServer = anno.BoolValue(config.AnnotationSite24x7UseNameServer, defaults.UseNameServer)
+	monitor.UserGroupIDs = anno.StringSliceValue(config.AnnotationSite24x7UserGroupIDs, defaults.UserGroupIDs)
+	monitor.MonitorGroups = anno.StringSliceValue(config.AnnotationSite24x7MonitorGroupIDs, defaults.MonitorGroupIDs)
+	monitor.LocationProfileID = anno.StringValue(config.AnnotationSite24x7LocationProfileID, defaults.LocationProfileID)
+	monitor.NotificationProfileID = anno.StringValue(config.AnnotationSite24x7NotificationProfileID, defaults.NotificationProfileID)
+	monitor.ThresholdProfileID = anno.StringValue(config.AnnotationSite24x7ThresholdProfileID, defaults.ThresholdProfileID)
 
-	m := &site24x7api.Monitor{
-		Type:                  "URL",
-		MonitorID:             model.ID,
-		DisplayName:           model.Name,
-		Website:               model.URL,
-		CheckFrequency:        a.String(config.AnnotationSite24x7CheckFrequency, d.CheckFrequency),
-		HTTPMethod:            a.String(config.AnnotationSite24x7HTTPMethod, d.HTTPMethod),
-		AuthUser:              a.String(config.AnnotationSite24x7AuthUser, d.AuthUser),
-		AuthPass:              a.String(config.AnnotationSite24x7AuthPass, d.AuthPass),
-		MatchCase:             a.Bool(config.AnnotationSite24x7MatchCase, d.MatchCase),
-		UserAgent:             a.String(config.AnnotationSite24x7UserAgent, d.UserAgent),
-		Timeout:               a.Int(config.AnnotationSite24x7Timeout, d.Timeout),
-		UseNameServer:         a.Bool(config.AnnotationSite24x7UseNameServer, d.UseNameServer),
-		UserGroupIDs:          a.StringSlice(config.AnnotationSite24x7UserGroupIDs, d.UserGroupIDs),
-		MonitorGroups:         a.StringSlice(config.AnnotationSite24x7MonitorGroupIDs, d.MonitorGroupIDs),
-		LocationProfileID:     a.String(config.AnnotationSite24x7LocationProfileID, d.LocationProfileID),
-		NotificationProfileID: a.String(config.AnnotationSite24x7NotificationProfileID, d.NotificationProfileID),
-		ThresholdProfileID:    a.String(config.AnnotationSite24x7ThresholdProfileID, d.ThresholdProfileID),
+	err := anno.ParseJSON(config.AnnotationSite24x7CustomHeaders, &monitor.CustomHeaders)
+	if err != nil {
+		return nil, err
 	}
 
-	b.err = a.JSON(config.AnnotationSite24x7CustomHeaders, &m.CustomHeaders)
-	if b.err != nil {
-		return b
-	} else if m.CustomHeaders == nil {
-		m.CustomHeaders = d.CustomHeaders
+	if monitor.CustomHeaders == nil {
+		monitor.CustomHeaders = defaults.CustomHeaders
 	}
 
-	b.err = a.JSON(config.AnnotationSite24x7Actions, &m.ActionIDs)
-	if b.err != nil {
-		return b
-	} else if m.ActionIDs == nil {
-		m.ActionIDs = d.Actions
+	err = anno.ParseJSON(config.AnnotationSite24x7Actions, &monitor.ActionIDs)
+	if err != nil {
+		return nil, err
 	}
 
-	b.monitor = m
+	if monitor.ActionIDs == nil {
+		monitor.ActionIDs = defaults.Actions
+	}
 
-	return b
+	return b.finalizeMonitor(monitor)
 }
 
-func (b *builder) build() (*site24x7api.Monitor, error) {
-	if b.err != nil {
-		return nil, b.err
-	}
-
-	if b.monitor == nil {
-		return nil, errors.New("cannot build monitor without model")
-	}
-
-	for _, defaulter := range b.defaulters {
-		err := defaulter(b.client, b.monitor)
-		if err != nil {
+func (b *builder) finalizeMonitor(monitor *site24x7api.Monitor) (*site24x7api.Monitor, error) {
+	for _, f := range b.finalizers {
+		if err := f(monitor); err != nil {
 			return nil, err
 		}
 	}
 
-	klog.V(2).Infof("built site24x7 monitor: %#v", b.monitor)
-
-	return b.monitor, nil
+	return monitor, nil
 }
