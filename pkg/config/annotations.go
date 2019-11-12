@@ -175,7 +175,7 @@ func (a Annotations) IntValue(name string, defaultValue ...int) int {
 
 // ParseJSON parses the value of the annotation into p. P must be a pointer. If
 // the annotation does not exist, p is not altered. JSON will return any errors
-// occuring during unmarshal operations.
+// occurring during unmarshal operations.
 func (a Annotations) ParseJSON(name string, p interface{}) error {
 	val, ok := a[name]
 	if !ok {

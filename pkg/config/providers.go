@@ -68,7 +68,7 @@ type Site24x7MonitorDefaults struct {
 	AutoLocationProfile bool `json:"autoLocationProfile"`
 
 	// AutoNotificationProfile configures the behaviour for auto-detecting the
-	// notification profile to use. If set to true, the first notificaiton
+	// notification profile to use. If set to true, the first notification
 	// profile returned by the Site24x7 API will be used. This only applies, if
 	// the default NotificationProfileID is not set.
 	AutoNotificationProfile bool `json:"autoNotificationProfile"`
