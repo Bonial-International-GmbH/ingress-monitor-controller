@@ -10,14 +10,14 @@ import (
 const (
 	// DefaultProvider is the provider that is used if none is specified
 	// explicitly.
-	DefaultProvider = ProviderNull
+	DefaultProvider = ProviderSite24x7
 
 	// DefaultNameTemplate is the default template used for naming monitors.
 	DefaultNameTemplate = "{{.Namespace}}-{{.IngressName}}"
 
 	// DefaultResyncInterval is the default interval for the controller to
 	// resync Ingress resources.
-	DefaultResyncInterval = 5 * time.Minute
+	DefaultResyncInterval = 1 * time.Hour
 )
 
 // Options holds the options that can be configured via cli flags.
@@ -44,7 +44,7 @@ func NewDefaultOptions() *Options {
 
 // AddFlags adds cli flags for configurable options to the command.
 func (o *Options) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolVar(&o.NoDelete, "no-delete", o.NoDelete, "If set, delete actions will only be printed but not executed. This is useful for debugging.")
+	cmd.Flags().BoolVar(&o.NoDelete, "no-delete", o.NoDelete, "If set, monitors will not be deleted if the ingress is deleted.")
 	cmd.Flags().DurationVar(&o.CreationDelay, "creation-delay", o.CreationDelay, "Duration to wait after an ingress is created before creating the monitor for it.")
 	cmd.Flags().DurationVar(&o.ResyncInterval, "resync-interval", o.ResyncInterval, "Duration after which to recheck all ingresses.")
 	cmd.Flags().StringVar(&o.NameTemplate, "name-template", o.NameTemplate, "The template to use for the monitor name. Valid fields are: .IngressName, .Namespace.")

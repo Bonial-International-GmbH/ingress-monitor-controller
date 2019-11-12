@@ -42,9 +42,22 @@ kubectl apply -f deploy/
 Configuration
 -------------
 
-The provider for the website monitors can be set via the `--provider` argument
-of the controller. The controller optionally reads provider specific config
-from a file which can be specified using the `--provider-config` flag.
+### CLI Flags
+
+The following CLI flags are available:
+
+| Flag                | Description                                                                           | Default                           |
+| ------              | -------------                                                                         | ---------                         |
+| `--provider`        | The provider to use for creating monitors.                                            | `site24x7`                        |
+| `--provider-config` | Location of the config file for the monitor providers.                                | `""`                              |
+| `--name-template`   | The template to use for the monitor name. Valid fields are: .IngressName, .Namespace. | `{{.Namespace}}-{{.IngressName}}` |
+| `--namespace`       | Namespace to watch. If empty, all namespaces are watched.                             | `""`                              |
+| `--resync-interval` | Duration after which to recheck all ingresses. `0` disables resync.                   | `1h`                              |
+| `--creation-delay`  | Duration to wait after an ingress is created before creating the monitor for it.      | `0s`                              |
+| `--no-delete`       | If set, monitors will not be deleted if the ingress is deleted.                       | `false`                           |
+
+Additionally, the controller also exposes all flags supported by
+[klog](https://github.com/kubernetes/klog) to configure the logger.
 
 ### Provider Configuration File
 
@@ -120,7 +133,7 @@ certain provider. The following annotations are supported:
 | Annotation                                 | Description                                                                                | Default   |
 | ------------                               | -------------                                                                              | --------- |
 | `ingress-monitor.bonial.com/enabled`       | Controls whether a monitor should be created for the ingress or not                        | `false`   |
-| `ingress-monitor.bonial.com/force-https`   | Forces the monitored URL to be HTTPS even it TLS is not configured for the ingress         | `false`   |
+| `ingress-monitor.bonial.com/force-https`   | Forces the monitored URL to be HTTPS even if TLS is not configured for the ingress         | `false`   |
 | `ingress-monitor.bonial.com/path-override` | By default, `/` is monitored. This can be overridden with this annotation (e.g. `/health`) | `/`       |
 
 ### Supported Third Party Annotations
@@ -131,7 +144,7 @@ annotation is set to `true`.
 
 ### Provider Specific Annotations
 
-You can control the configuration of a website monitor via annotations that are
-provider specific. For a full list of supported annotations check out the
-constants and their documentation in
+You can control the configuration of a website monitor via provider specific
+annotations. For a full list of supported annotations check out the constants
+and their documentation in
 [`pkg/config/annotations.go`](pkg/config/annotations.go).

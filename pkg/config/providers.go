@@ -26,13 +26,18 @@ type ProviderConfig struct {
 // Site24x7Config is the configration for the Site24x7 website monitor
 // provider.
 type Site24x7Config struct {
-	// ClientID is the OAuth2 client ID provided by Site24x7.
+	// ClientID is the OAuth2 client ID provided by Site24x7. If not specified,
+	// the value will be read from the SITE24X7_CLIENT_ID environment variable.
 	ClientID string `json:"clientID"`
 
-	// ClientSecret is the OAuth2 client secret provided by Site24x7.
+	// ClientSecret is the OAuth2 client secret provided by Site24x7. If not
+	// specified, the value will be read from the SITE24X7_CLIENT_SECRET
+	// environment variable.
 	ClientSecret string `json:"clientSecret"`
 
-	// RefreshToken is the OAuth2 refresh token provided by Site24x7.
+	// RefreshToken is the OAuth2 refresh token provided by Site24x7. If not
+	// specified, the value will be read from the SITE24X7_REFRESH_TOKEN
+	// environment variable.
 	RefreshToken string `json:"refreshToken"`
 
 	// MonitorDefaults contain defaults that apply to all monitors. The
