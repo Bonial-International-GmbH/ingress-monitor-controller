@@ -11,8 +11,8 @@ type Provider struct {
 }
 
 // Create implements provider.Interface.
-func (p *Provider) Create(m *models.Monitor) error {
-	args := p.Called(m)
+func (p *Provider) Create(model *models.Monitor) error {
+	args := p.Called(model)
 
 	return args.Error(0)
 }
@@ -28,8 +28,8 @@ func (p *Provider) Get(name string) (*models.Monitor, error) {
 }
 
 // Create implements provider.Interface.
-func (p *Provider) Update(m *models.Monitor) error {
-	args := p.Called(m)
+func (p *Provider) Update(model *models.Monitor) error {
+	args := p.Called(model)
 
 	return args.Error(0)
 }

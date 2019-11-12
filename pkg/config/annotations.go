@@ -121,9 +121,9 @@ func (a Annotations) StringValue(name string, defaultValue ...string) string {
 // annotation value is separated on commas. If the annotations does not exist,
 // the optional default value will be returned, nil otherwise.
 func (a Annotations) StringSliceValue(name string, defaultValue ...[]string) []string {
-	s := a.StringValue(name)
-	if len(s) > 0 {
-		return strings.Split(s, ",")
+	val := a.StringValue(name)
+	if len(val) > 0 {
+		return strings.Split(val, ",")
 	}
 
 	if len(defaultValue) > 0 {
@@ -137,13 +137,13 @@ func (a Annotations) StringSliceValue(name string, defaultValue ...[]string) []s
 // not exist, the optional default value will be returned, false otherwise. If
 // the annotation's value cannot be parsed as bool, false is returned.
 func (a Annotations) BoolValue(name string, defaultValue ...bool) bool {
-	if val, ok := a[name]; ok {
-		b, err := strconv.ParseBool(val)
+	if sval, ok := a[name]; ok {
+		val, err := strconv.ParseBool(sval)
 		if err != nil {
-			log.Errorf("invalid bool value in annotation %q: %s", name, val)
+			log.Errorf("invalid bool value in annotation %q: %s", name, sval)
 		}
 
-		return b
+		return val
 	}
 
 	if len(defaultValue) > 0 {
@@ -157,13 +157,13 @@ func (a Annotations) BoolValue(name string, defaultValue ...bool) bool {
 // exist, the optional default value will be returned, zero otherwise. If the
 // annotation's value cannot be parsed as int, zero is returned.
 func (a Annotations) IntValue(name string, defaultValue ...int) int {
-	if val, ok := a[name]; ok {
-		i, err := strconv.Atoi(val)
+	if sval, ok := a[name]; ok {
+		val, err := strconv.Atoi(sval)
 		if err != nil {
-			log.Errorf("invalid int value in annotation %q: %s", name, val)
+			log.Errorf("invalid int value in annotation %q: %s", name, sval)
 		}
 
-		return i
+		return val
 	}
 
 	if len(defaultValue) > 0 {

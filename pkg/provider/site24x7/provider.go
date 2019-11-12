@@ -29,8 +29,8 @@ func NewProvider(config config.Site24x7Config) *Provider {
 }
 
 // Create implements provider.Interface.
-func (p *Provider) Create(m *models.Monitor) error {
-	monitor, err := p.builder.FromModel(m)
+func (p *Provider) Create(model *models.Monitor) error {
+	monitor, err := p.builder.FromModel(model)
 	if err != nil {
 		return err
 	}
@@ -65,8 +65,8 @@ func (p *Provider) Get(name string) (*models.Monitor, error) {
 }
 
 // Create implements provider.Interface.
-func (p *Provider) Update(m *models.Monitor) error {
-	monitor, err := p.builder.FromModel(m)
+func (p *Provider) Update(model *models.Monitor) error {
+	monitor, err := p.builder.FromModel(model)
 	if err != nil {
 		return err
 	}

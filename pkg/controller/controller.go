@@ -27,7 +27,7 @@ type Controller struct {
 
 // New creates a new *Controller. The controller will watch for ingress changes
 // and will create, update or delete monitors as necessary.
-func New(client kubernetes.Interface, svc monitor.Service, options *config.Options) *Controller {
+func New(client kubernetes.Interface, service monitor.Service, options *config.Options) *Controller {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 	listWatcher := cache.NewListWatchFromClient(client.ExtensionsV1beta1().RESTClient(), "ingresses", options.Namespace, fields.Everything())
 	indexers := cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}
@@ -36,7 +36,7 @@ func New(client kubernetes.Interface, svc monitor.Service, options *config.Optio
 	c := &Controller{
 		client:        client,
 		creationDelay: options.CreationDelay,
-		service:       svc,
+		service:       service,
 		queue:         queue,
 		informer:      informer,
 	}

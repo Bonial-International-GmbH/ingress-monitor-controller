@@ -8,7 +8,7 @@ import (
 )
 
 func TestAnnotations(t *testing.T) {
-	a := Annotations{
+	annotations := Annotations{
 		"a":           "somestring",
 		"b":           "true",
 		"c":           "42",
@@ -18,36 +18,36 @@ func TestAnnotations(t *testing.T) {
 	}
 
 	// existent value
-	assert.Equal(t, "somestring", a.StringValue("a"))
-	assert.Equal(t, true, a.BoolValue("b"))
-	assert.Equal(t, 42, a.IntValue("c"))
-	assert.Equal(t, []string{"foo", "bar", "baz"}, a.StringSliceValue("d"))
+	assert.Equal(t, "somestring", annotations.StringValue("a"))
+	assert.Equal(t, true, annotations.BoolValue("b"))
+	assert.Equal(t, 42, annotations.IntValue("c"))
+	assert.Equal(t, []string{"foo", "bar", "baz"}, annotations.StringSliceValue("d"))
 
 	// default fallback
-	assert.Equal(t, "thedefault", a.StringValue("nonexistent", "thedefault"))
-	assert.Equal(t, true, a.BoolValue("nonexistent", true))
-	assert.Equal(t, 2, a.IntValue("nonexistent", 2))
-	assert.Equal(t, []string{"thedefault"}, a.StringSliceValue("nonexistent", []string{"thedefault"}))
+	assert.Equal(t, "thedefault", annotations.StringValue("nonexistent", "thedefault"))
+	assert.Equal(t, true, annotations.BoolValue("nonexistent", true))
+	assert.Equal(t, 2, annotations.IntValue("nonexistent", 2))
+	assert.Equal(t, []string{"thedefault"}, annotations.StringSliceValue("nonexistent", []string{"thedefault"}))
 
 	// unparsable bool/int
-	assert.Equal(t, false, a.BoolValue("invalidjson"))
-	assert.Equal(t, 0, a.IntValue("invalidjson"))
+	assert.Equal(t, false, annotations.BoolValue("invalidjson"))
+	assert.Equal(t, 0, annotations.IntValue("invalidjson"))
 
 	// zero value
-	assert.Equal(t, "", a.StringValue("nonexistent"))
-	assert.Equal(t, false, a.BoolValue("nonexistent"))
-	assert.Equal(t, 0, a.IntValue("nonexistent"))
-	assert.Equal(t, []string(nil), a.StringSliceValue("nonexistent"))
+	assert.Equal(t, "", annotations.StringValue("nonexistent"))
+	assert.Equal(t, false, annotations.BoolValue("nonexistent"))
+	assert.Equal(t, 0, annotations.IntValue("nonexistent"))
+	assert.Equal(t, []string(nil), annotations.StringSliceValue("nonexistent"))
 
 	// json tests
-	m := map[string]string{}
-	require.NoError(t, a.ParseJSON("e", &m))
-	assert.Equal(t, map[string]string{"foo": "bar"}, m)
+	dest := map[string]string{}
+	require.NoError(t, annotations.ParseJSON("e", &dest))
+	assert.Equal(t, map[string]string{"foo": "bar"}, dest)
 
-	m = map[string]string{}
-	require.NoError(t, a.ParseJSON("nonexistent", &m))
-	assert.Equal(t, map[string]string{}, m)
+	dest = map[string]string{}
+	require.NoError(t, annotations.ParseJSON("nonexistent", &dest))
+	assert.Equal(t, map[string]string{}, dest)
 
-	m = map[string]string{}
-	require.Error(t, a.ParseJSON("invalidjson", &m))
+	dest = map[string]string{}
+	require.Error(t, annotations.ParseJSON("invalidjson", &dest))
 }

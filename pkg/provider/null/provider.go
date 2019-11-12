@@ -8,21 +8,21 @@ import (
 type Provider struct{}
 
 // Create implements provider.Interface.
-func (p *Provider) Create(m *models.Monitor) error {
+func (p *Provider) Create(_ *models.Monitor) error {
 	return nil
 }
 
 // Create implements provider.Interface.
-func (p *Provider) Get(name string) (*models.Monitor, error) {
+func (p *Provider) Get(_ string) (*models.Monitor, error) {
 	return nil, models.ErrMonitorNotFound
 }
 
 // Create implements provider.Interface.
-func (p *Provider) Update(m *models.Monitor) error {
+func (p *Provider) Update(_ *models.Monitor) error {
 	return nil
 }
 
 // Create implements provider.Interface.
-func (p *Provider) Delete(name string) error {
+func (p *Provider) Delete(_ string) error {
 	return nil
 }

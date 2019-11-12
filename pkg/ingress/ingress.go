@@ -40,17 +40,17 @@ func Validate(ingress *v1beta1.Ingress) error {
 func BuildMonitorURL(ingress *v1beta1.Ingress) (string, error) {
 	host := buildHostURL(ingress)
 
-	u, err := url.Parse(host)
+	url, err := url.Parse(host)
 	if err != nil {
 		return "", err
 	}
 
 	path, found := ingress.Annotations[config.AnnotationPathOverride]
 	if found {
-		u.Path = path
+		url.Path = path
 	}
 
-	return u.String(), nil
+	return url.String(), nil
 }
 
 func buildHostURL(ingress *v1beta1.Ingress) string {
@@ -70,9 +70,9 @@ func supportsTLS(ingress *v1beta1.Ingress) bool {
 }
 
 func forceHTTPS(ingress *v1beta1.Ingress) bool {
-	a := config.Annotations(ingress.Annotations)
+	annotations := config.Annotations(ingress.Annotations)
 
-	return a.BoolValue(config.AnnotationForceHTTPS) || a.BoolValue(nginxForceSSLRedirectAnnotation)
+	return annotations.BoolValue(config.AnnotationForceHTTPS) || annotations.BoolValue(nginxForceSSLRedirectAnnotation)
 }
 
 func containsWildcard(hostName string) bool {

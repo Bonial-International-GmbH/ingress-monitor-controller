@@ -9,7 +9,7 @@ import (
 )
 
 type event interface {
-	handle(s monitor.Service) error
+	handle(svc monitor.Service) error
 }
 
 type updateEvent struct {
@@ -17,14 +17,14 @@ type updateEvent struct {
 	newIngress *v1beta1.Ingress
 }
 
-func (e updateEvent) handle(s monitor.Service) error {
-	a := config.Annotations(e.newIngress.Annotations)
+func (e updateEvent) handle(svc monitor.Service) error {
+	annotations := config.Annotations(e.newIngress.Annotations)
 
-	if a.BoolValue(config.AnnotationEnabled) {
-		return s.EnsureMonitor(e.newIngress)
+	if annotations.BoolValue(config.AnnotationEnabled) {
+		return svc.EnsureMonitor(e.newIngress)
 	}
 
-	return s.DeleteMonitor(e.oldIngress)
+	return svc.DeleteMonitor(e.oldIngress)
 }
 
 func (e updateEvent) String() string {
@@ -39,8 +39,8 @@ type deleteEvent struct {
 	ingress *v1beta1.Ingress
 }
 
-func (e deleteEvent) handle(s monitor.Service) error {
-	return s.DeleteMonitor(e.ingress)
+func (e deleteEvent) handle(svc monitor.Service) error {
+	return svc.DeleteMonitor(e.ingress)
 }
 
 func (e deleteEvent) String() string {

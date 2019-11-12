@@ -12,7 +12,7 @@ import (
 type Interface interface {
 	// Create creates a monitor based on the given model. Must return an error
 	// if the monitor creation fails.
-	Create(m *models.Monitor) error
+	Create(model *models.Monitor) error
 
 	// Get retrieves a monitor by its name. Must return
 	// models.ErrMonitorNotFound if the monitor does not exist.
@@ -20,7 +20,7 @@ type Interface interface {
 
 	// Update updates a monitor based on the given model. Must return an error
 	// if the monitor update fails.
-	Update(m *models.Monitor) error
+	Update(model *models.Monitor) error
 
 	// Delete delete a monitor by its name. Must return an error if the monitor
 	// deletion fails.

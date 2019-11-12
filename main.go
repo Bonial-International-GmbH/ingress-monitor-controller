@@ -29,7 +29,7 @@ func init() {
 // NewRootCommand creates a new *cobra.Command that is used as the root command
 // for ingress-monitor-controller.
 func NewRootCommand() *cobra.Command {
-	o := config.NewDefaultOptions()
+	options := config.NewDefaultOptions()
 
 	cmd := &cobra.Command{
 		Use:           "ingress-monitor-controller",
@@ -37,16 +37,16 @@ func NewRootCommand() *cobra.Command {
 		SilenceErrors: true,
 		Args:          cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := o.Validate()
+			err := options.Validate()
 			if err != nil {
 				return err
 			}
 
-			return Run(o)
+			return Run(options)
 		},
 	}
 
-	o.AddFlags(cmd)
+	options.AddFlags(cmd)
 
 	return cmd
 }
@@ -89,13 +89,13 @@ func Run(options *config.Options) error {
 		return errors.Wrapf(err, "initializing monitor service failed")
 	}
 
-	c := controller.New(client, svc, options)
+	ctrl := controller.New(client, svc, options)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	go handleSignals(cancel)
 
-	return c.Run(ctx.Done())
+	return ctrl.Run(ctx.Done())
 }
 
 func handleSignals(cancelFunc func()) {
