@@ -70,31 +70,31 @@ site24x7:
   clientSecret: the-oauth-client-secret
   refreshToken: the-oauth-refresh-token
   monitorDefaults:
-	Actions:
+    Actions:
       - alert_type: 0
         action_id: "123"
-	AuthPass: ""
-	AuthUser: ""
+    AuthPass: ""
+    AuthUser: ""
     AutoLocationProfile: true
-	AutoMonitorGroup: true
-	AutoNotificationProfile: true
-	AutoThresholdProfile: true
-	AutoUserGroup: true
-	CheckFrequency: "1"
+    AutoMonitorGroup: true
+    AutoNotificationProfile: true
+    AutoThresholdProfile: true
+    AutoUserGroup: true
+    CheckFrequency: "1"
     CustomHeaders:
       - name: X-Monitor-Created-By
         value: ingress-monitor-controller
-	HTTPMethod: G
-	LocationProfileID: "123"
-	MatchCase: true
-	MonitorGroupIDs:
+    HTTPMethod: G
+    LocationProfileID: "123"
+    MatchCase: true
+    MonitorGroupIDs:
       - "123"
-	NotificationProfileID: "456"
-	ThresholdProfileID: "678"
-	Timeout: 10
-	UseNameServer: true
-	UserAgent: "curl/v1.33.7"
-	UserGroupIDs:
+    NotificationProfileID: "456"
+    ThresholdProfileID: "678"
+    Timeout: 10
+    UseNameServer: true
+    UserAgent: "curl/v1.33.7"
+    UserGroupIDs:
       - "456"
 ```
 
