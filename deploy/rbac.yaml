@@ -1,0 +1,40 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  labels:
+    app: ingress-monitor-controller
+  name: ingress-monitor-controller
+rules:
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses
+    verbs:
+      - list
+      - watch
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  labels:
+    app: ingress-monitor-controller
+  name: ingress-monitor-controller
+roleRef:
+  kind: ClusterRole
+  name: ingress-monitor-controller
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: ingress-monitor-controller
+    namespace: kube-system
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: ingress-monitor-controller
+  name: ingress-monitor-controller
+  namespace: kube-system

@@ -1,0 +1,37 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ingress-monitor-controller
+  name: ingress-monitor-controller
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ingress-monitor-controller
+  template:
+    metadata:
+      labels:
+        app: ingress-monitor-controller
+    spec:
+      serviceAccountName: ingress-monitor-controller
+      containers:
+        - name: controller
+          image: ingress-monitor-controller:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - --v=4
+            - --provider=site24x7
+            - --provider-config=/config/providers.yaml
+          envFrom:
+            - secretRef:
+                name: ingress-monitor-controller
+          volumeMounts:
+            - mountPath: /config
+              name: config
+      volumes:
+        - name: config
+          configMap:
+            name: ingress-monitor-controller
