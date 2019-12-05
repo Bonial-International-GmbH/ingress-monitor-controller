@@ -48,7 +48,7 @@ func TestProvider_Create(t *testing.T) {
 			validate: func(t *testing.T, c *fake.Client) {
 				assert.Len(t, c.FakeMonitors.Calls, 0)
 			},
-			expected: errors.New(`invalid json in annotation "site24x7.ingress-monitor.bonial.com/actions": {invalidjson: invalid character 'i' looking for beginning of object key string`),
+			expected: errors.New(`failed to build site24x7 monitor from model: &models.Monitor{ID:"", Name:"my-monitor", URL:"http://my-monitor", Annotations:config.Annotations{"site24x7.ingress-monitor.bonial.com/actions":"{invalidjson"}}: invalid json in annotation "site24x7.ingress-monitor.bonial.com/actions": {invalidjson: invalid character 'i' looking for beginning of object key string`),
 		},
 	}
 
@@ -175,7 +175,7 @@ func TestProvider_Update(t *testing.T) {
 			setup: func(c *fake.Client) {
 				c.FakeLocationProfiles.On("List").Return(nil, nil)
 			},
-			expected: errors.New("no location profiles configured"),
+			expected: errors.New(`failed to build site24x7 monitor from model: &models.Monitor{ID:"", Name:"my-monitor", URL:"http://my-monitor", Annotations:config.Annotations(nil)}: no location profiles configured`),
 		},
 	}
 
