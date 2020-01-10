@@ -2,6 +2,8 @@ cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 github.com/Azure/go-autorest v11.1.2+incompatible/go.mod h1:r+4oMnoxhatjLLJ6zxSWATqVooLgysK6ZNox3g/xq24=
 github.com/Bonial-International-GmbH/site24x7-go v0.0.1 h1:51bzdUgtWlBfjZanVHCt5gn5fIlYSX/31OhZHjFgXBA=
 github.com/Bonial-International-GmbH/site24x7-go v0.0.1/go.mod h1:VlIGpD11eJjemyS+Rmh4pd9bhAwYuXFemVO+nL6OSqs=
+github.com/Bonial-International-GmbH/site24x7-go v0.0.2 h1:N5yUvg6zdIZrY5Jzu0EdzlVn2lDblijZmzxAPcgYTpI=
+github.com/Bonial-International-GmbH/site24x7-go v0.0.2/go.mod h1:VlIGpD11eJjemyS+Rmh4pd9bhAwYuXFemVO+nL6OSqs=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb06e3pkSAbeQ52E9H9iFoQsEEwGN64994WTCIhntQ=
 github.com/PuerkitoBio/purell v1.0.0/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=

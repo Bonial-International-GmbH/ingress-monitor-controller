@@ -127,7 +127,7 @@ func (s *service) updateMonitor(monitor *models.Monitor, name, url string, annot
 func (s *service) deleteMonitor(name string) error {
 	err := s.provider.Delete(name)
 	if err == models.ErrMonitorNotFound {
-		klog.V(1).Infof("monitor %q was already deleted", name)
+		klog.V(4).Infof("monitor %q is not present", name)
 		return nil
 	} else if err != nil {
 		return err

@@ -4,6 +4,7 @@ import (
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/config"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/models"
 	site24x7 "github.com/Bonial-International-GmbH/site24x7-go"
+	"github.com/pkg/errors"
 )
 
 // Provider manages Site24x7 website monitors.
@@ -32,19 +33,22 @@ func NewProvider(config config.Site24x7Config) *Provider {
 func (p *Provider) Create(model *models.Monitor) error {
 	monitor, err := p.builder.FromModel(model)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to build site24x7 monitor from model: %#v", model)
 	}
 
 	_, err = p.client.Monitors().Create(monitor)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create site24x7 monitor: %#v", monitor)
+	}
 
-	return err
+	return nil
 }
 
 // Create implements provider.Interface.
 func (p *Provider) Get(name string) (*models.Monitor, error) {
 	monitors, err := p.client.Monitors().List()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to list site24x7 monitors")
 	}
 
 	for _, monitor := range monitors {
@@ -68,12 +72,15 @@ func (p *Provider) Get(name string) (*models.Monitor, error) {
 func (p *Provider) Update(model *models.Monitor) error {
 	monitor, err := p.builder.FromModel(model)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to build site24x7 monitor from model: %#v", model)
 	}
 
 	_, err = p.client.Monitors().Update(monitor)
+	if err != nil {
+		return errors.Wrapf(err, "failed to update site24x7 monitor: %#v", monitor)
+	}
 
-	return err
+	return nil
 }
 
 // Create implements provider.Interface.
@@ -83,5 +90,10 @@ func (p *Provider) Delete(name string) error {
 		return err
 	}
 
-	return p.client.Monitors().Delete(monitor.ID)
+	err = p.client.Monitors().Delete(monitor.ID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete site24x7 monitor with ID %s", monitor.ID)
+	}
+
+	return nil
 }

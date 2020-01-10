@@ -3,7 +3,7 @@ module github.com/Bonial-International-GmbH/ingress-monitor-controller
 go 1.12
 
 require (
-	github.com/Bonial-International-GmbH/site24x7-go v0.0.1
+	github.com/Bonial-International-GmbH/site24x7-go v0.0.2
 	github.com/imdario/mergo v0.3.5
 	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.2
