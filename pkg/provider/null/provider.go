@@ -26,3 +26,9 @@ func (p *Provider) Update(_ *models.Monitor) error {
 func (p *Provider) Delete(_ string) error {
 	return nil
 }
+
+// GetIPSourceRanges implements provider.Interface.
+func (p *Provider) GetIPSourceRanges(model *models.Monitor) ([]string, error) {
+	// We just whitelist localhost for testing here.
+	return []string{"127.0.0.1/32"}, nil
+}

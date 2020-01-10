@@ -4,14 +4,17 @@ import (
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/config"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/models"
 	site24x7 "github.com/Bonial-International-GmbH/site24x7-go"
+	"github.com/Bonial-International-GmbH/site24x7-go/location"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 )
 
 // Provider manages Site24x7 website monitors.
 type Provider struct {
-	client  site24x7.Client
-	config  config.Site24x7Config
-	builder *builder
+	client     site24x7.Client
+	config     config.Site24x7Config
+	ipProvider *location.ProfileIPProvider
+	builder    *builder
 }
 
 // NewProvider creates a new Site24x7 provider with given Site24x7Config.
@@ -96,4 +99,48 @@ func (p *Provider) Delete(name string) error {
 	}
 
 	return nil
+}
+
+// getProfileIPProvider lazily creates a ProfileIPProvider. This is an
+// optimization to avoid API calls when not needed and also allows us to stub
+// out the ProfileIPProvider in tests.
+func (p *Provider) getProfileIPProvider() (*location.ProfileIPProvider, error) {
+	var err error
+	if p.ipProvider == nil {
+		p.ipProvider, err = location.NewDefaultProfileIPProvider(p.client)
+	}
+
+	return p.ipProvider, err
+}
+
+// GetIPSourceRanges implements provider.Interface.
+func (p *Provider) GetIPSourceRanges(model *models.Monitor) ([]string, error) {
+	monitor, err := p.builder.FromModel(model)
+	if err != nil {
+		return nil, err
+	}
+
+	ipProvider, err := p.getProfileIPProvider()
+	if err != nil {
+		return nil, err
+	}
+
+	locationProfile, err := p.client.LocationProfiles().Get(monitor.LocationProfileID)
+	if err != nil {
+		return nil, err
+	}
+
+	locationIPs, err := ipProvider.GetLocationIPs(locationProfile)
+	if err != nil {
+		return nil, err
+	}
+
+	klog.V(4).Infof("found %d ip addresses for location profile %q: %v", len(locationIPs), locationProfile.ProfileID, locationIPs)
+
+	sourceRanges := make([]string, len(locationIPs))
+	for i, ip := range locationIPs {
+		sourceRanges[i] = ip + "/32"
+	}
+
+	return sourceRanges, nil
 }

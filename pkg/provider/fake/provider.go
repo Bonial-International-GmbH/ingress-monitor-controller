@@ -40,3 +40,13 @@ func (p *Provider) Delete(name string) error {
 
 	return args.Error(0)
 }
+
+// GetIPSourceRanges implements provider.Interface.
+func (p *Provider) GetIPSourceRanges(model *models.Monitor) ([]string, error) {
+	args := p.Called(model)
+	if obj, ok := args.Get(0).([]string); ok {
+		return obj, args.Error(1)
+	}
+
+	return nil, args.Error(1)
+}
