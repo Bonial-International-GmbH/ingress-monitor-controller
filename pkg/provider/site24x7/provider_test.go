@@ -8,6 +8,7 @@ import (
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/models"
 	site24x7api "github.com/Bonial-International-GmbH/site24x7-go/api"
 	"github.com/Bonial-International-GmbH/site24x7-go/fake"
+	"github.com/Bonial-International-GmbH/site24x7-go/location"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -313,6 +314,147 @@ func TestProvider_Delete(t *testing.T) {
 				assert.Equal(t, test.expected.Error(), err.Error())
 			} else {
 				require.NoError(t, err)
+			}
+
+			if test.validate != nil {
+				test.validate(t, c)
+			}
+		})
+	}
+}
+
+func TestProvider_GetIPSourceRanges(t *testing.T) {
+	tests := []struct {
+		name        string
+		ipProvider  *location.ProfileIPProvider
+		model       *models.Monitor
+		setup       func(*fake.Client)
+		validate    func(*testing.T, *fake.Client)
+		expected    []string
+		expectedErr error
+	}{
+		{
+			name: "gets IP source ranges for model",
+			ipProvider: &location.ProfileIPProvider{
+				IPSource: &location.StaticIPSource{
+					LocationIPs: map[string][]string{
+						"789": []string{"1.3.3.7", "0.8.1.5"},
+						"123": []string{"1.2.3.4", "5.6.7.8"},
+						"456": []string{"1.1.1.1", "2.2.2.2"},
+					},
+				},
+				Locations: []*site24x7api.Location{
+					{LocationID: "123"},
+					{LocationID: "456"},
+				},
+			},
+			model: &models.Monitor{
+				ID:   "12345678",
+				Name: "foobar",
+				URL:  "https://foo.bar.baz",
+				Annotations: config.Annotations{
+					config.AnnotationSite24x7NotificationProfileID: "1234",
+					config.AnnotationSite24x7LocationProfileID:     "456",
+					config.AnnotationSite24x7ThresholdProfileID:    "67890",
+					config.AnnotationSite24x7MonitorGroupIDs:       "12,34,56,78",
+					config.AnnotationSite24x7UserGroupIDs:          "111,222,333",
+				},
+			},
+			setup: func(c *fake.Client) {
+				locationProfile := &site24x7api.LocationProfile{
+					ProfileID:          "1",
+					PrimaryLocation:    "456",
+					SecondaryLocations: []string{"123"},
+				}
+
+				c.FakeLocationProfiles.On("Get", "456").Return(locationProfile, nil)
+			},
+			expected: []string{"1.1.1.1/32", "2.2.2.2/32", "1.2.3.4/32", "5.6.7.8/32"},
+		},
+		{
+			name: "does not fail if there are no IP address infos available for a location",
+			ipProvider: &location.ProfileIPProvider{
+				IPSource: &location.StaticIPSource{
+					LocationIPs: map[string][]string{
+						"789": []string{"1.3.3.7", "0.8.1.5"},
+					},
+				},
+				Locations: []*site24x7api.Location{
+					{LocationID: "123"},
+					{LocationID: "456"},
+				},
+			},
+			model: &models.Monitor{
+				ID:   "12345678",
+				Name: "foobar",
+				URL:  "https://foo.bar.baz",
+				Annotations: config.Annotations{
+					config.AnnotationSite24x7NotificationProfileID: "1234",
+					config.AnnotationSite24x7LocationProfileID:     "456",
+					config.AnnotationSite24x7ThresholdProfileID:    "67890",
+					config.AnnotationSite24x7MonitorGroupIDs:       "12,34,56,78",
+					config.AnnotationSite24x7UserGroupIDs:          "111,222,333",
+				},
+			},
+			setup: func(c *fake.Client) {
+				locationProfile := &site24x7api.LocationProfile{
+					ProfileID:          "1",
+					PrimaryLocation:    "456",
+					SecondaryLocations: []string{"123"},
+				}
+
+				c.FakeLocationProfiles.On("Get", "456").Return(locationProfile, nil)
+			},
+			expected: []string{},
+		},
+		{
+			name: "returns error if location profile lookup fails",
+			ipProvider: &location.ProfileIPProvider{
+				IPSource: &location.StaticIPSource{
+					LocationIPs: map[string][]string{
+						"789": []string{"1.3.3.7", "0.8.1.5"},
+					},
+				},
+				Locations: []*site24x7api.Location{
+					{LocationID: "123"},
+					{LocationID: "456"},
+				},
+			},
+			model: &models.Monitor{
+				ID:   "12345678",
+				Name: "foobar",
+				URL:  "https://foo.bar.baz",
+				Annotations: config.Annotations{
+					config.AnnotationSite24x7NotificationProfileID: "1234",
+					config.AnnotationSite24x7LocationProfileID:     "456",
+					config.AnnotationSite24x7ThresholdProfileID:    "67890",
+					config.AnnotationSite24x7MonitorGroupIDs:       "12,34,56,78",
+					config.AnnotationSite24x7UserGroupIDs:          "111,222,333",
+				},
+			},
+			setup: func(c *fake.Client) {
+				c.FakeLocationProfiles.On("Get", "456").Return(nil, errors.New("whoops"))
+			},
+			expectedErr: errors.New("whoops"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			p, c := newTestProvider(config.Site24x7Config{})
+			p.ipProvider = test.ipProvider
+
+			if test.setup != nil {
+				test.setup(c)
+			}
+
+			ips, err := p.GetIPSourceRanges(test.model)
+			if test.expectedErr != nil {
+				require.Error(t, err)
+				assert.Equal(t, test.expectedErr.Error(), err.Error())
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, test.expected, ips)
 			}
 
 			if test.validate != nil {

@@ -25,6 +25,12 @@ type Interface interface {
 	// Delete delete a monitor by its name. Must return an error if the monitor
 	// deletion fails.
 	Delete(name string) error
+
+	// GetIPSourceRanges returns a list of CIDR blocks that the provider is
+	// performing the monitoring checks from. The source ranges are
+	// automatically added to the source range whitelist of the
+	// nginx-ingress-controller if an ingress uses whitelisting.
+	GetIPSourceRanges(model *models.Monitor) ([]string, error)
 }
 
 // New creates a new monitor provider by name. Returns an error if the named
