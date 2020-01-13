@@ -19,6 +19,12 @@ type Service interface {
 	// DeleteMonitor deletes the monitor for an ingress. It must not be treated
 	// as an error if the monitor was already deleted.
 	DeleteMonitor(ingress *v1beta1.Ingress) error
+
+	// GetProviderIPSourceRanges retrieves the IP source ranges that the
+	// monitor provider is using to perform checks from. It is a list of CIDR
+	// blocks. These source ranges can be used to update the IP whitelist (if
+	// one is defined) of an ingress to allow checks by the monitor provider.
+	GetProviderIPSourceRanges(ingress *v1beta1.Ingress) ([]string, error)
 }
 
 type service struct {
@@ -53,28 +59,23 @@ func NewService(options *config.Options) (Service, error) {
 func (s *service) EnsureMonitor(ing *v1beta1.Ingress) error {
 	err := ingress.Validate(ing)
 	if err != nil {
-		klog.V(1).Infof(`ingress "%s/%s" is not supported: %v`, ing.Namespace, ing.Name, err)
+		klog.V(1).Infof(`ignoring unsupported ingress "%s/%s": %v`, ing.Namespace, ing.Name, err)
 		return nil
 	}
 
-	name, err := s.namer.Name(ing)
+	newMonitor, err := s.buildMonitorModel(ing)
 	if err != nil {
 		return err
 	}
 
-	url, err := ingress.BuildMonitorURL(ing)
-	if err != nil {
-		return err
-	}
-
-	monitor, err := s.provider.Get(name)
+	oldMonitor, err := s.provider.Get(newMonitor.Name)
 	if err == models.ErrMonitorNotFound {
-		return s.createMonitor(name, url, ing.Annotations)
+		return s.createMonitor(newMonitor)
 	} else if err != nil {
 		return err
 	}
 
-	return s.updateMonitor(monitor, name, url, ing.Annotations)
+	return s.updateMonitor(oldMonitor, newMonitor)
 }
 
 // DeleteMonitor implements Service.
@@ -92,13 +93,7 @@ func (s *service) DeleteMonitor(ingress *v1beta1.Ingress) error {
 	return s.deleteMonitor(name)
 }
 
-func (s *service) createMonitor(name, url string, annotations map[string]string) error {
-	monitor := &models.Monitor{
-		URL:         url,
-		Name:        name,
-		Annotations: annotations,
-	}
-
+func (s *service) createMonitor(monitor *models.Monitor) error {
 	err := s.provider.Create(monitor)
 	if err != nil {
 		return err
@@ -109,17 +104,15 @@ func (s *service) createMonitor(name, url string, annotations map[string]string)
 	return nil
 }
 
-func (s *service) updateMonitor(monitor *models.Monitor, name, url string, annotations map[string]string) error {
-	monitor.URL = url
-	monitor.Name = name
-	monitor.Annotations = annotations
+func (s *service) updateMonitor(oldMonitor, newMonitor *models.Monitor) error {
+	newMonitor.ID = oldMonitor.ID
 
-	err := s.provider.Update(monitor)
+	err := s.provider.Update(newMonitor)
 	if err != nil {
 		return err
 	}
 
-	klog.Infof("monitor %q updated", monitor.Name)
+	klog.Infof("monitor %q updated", newMonitor.Name)
 
 	return nil
 }
@@ -136,4 +129,40 @@ func (s *service) deleteMonitor(name string) error {
 	klog.Infof("monitor %q deleted", name)
 
 	return nil
+}
+
+func (s *service) buildMonitorModel(ing *v1beta1.Ingress) (*models.Monitor, error) {
+	name, err := s.namer.Name(ing)
+	if err != nil {
+		return nil, err
+	}
+
+	url, err := ingress.BuildMonitorURL(ing)
+	if err != nil {
+		return nil, err
+	}
+
+	monitor := &models.Monitor{
+		URL:         url,
+		Name:        name,
+		Annotations: ing.Annotations,
+	}
+
+	return monitor, nil
+}
+
+// GetProviderIPSourceRanges implements Service.
+func (s *service) GetProviderIPSourceRanges(ing *v1beta1.Ingress) ([]string, error) {
+	err := ingress.Validate(ing)
+	if err != nil {
+		klog.V(1).Infof(`ignoring unsupported ingress "%s/%s": %v`, ing.Namespace, ing.Name, err)
+		return nil, nil
+	}
+
+	monitor, err := s.buildMonitorModel(ing)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.provider.GetIPSourceRanges(monitor)
 }

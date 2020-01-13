@@ -221,6 +221,82 @@ func TestService_DeleteMonitor(t *testing.T) {
 	}
 }
 
+func TestService_GetProviderIPSourceRanges(t *testing.T) {
+	tests := []struct {
+		name        string
+		ingress     *v1beta1.Ingress
+		options     config.Options
+		setup       func(*fake.Provider)
+		expected    []string
+		expectedErr error
+	}{
+		{
+			name: "unsupported ingresses produce empty result and no error",
+			ingress: &v1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "kube-system",
+				},
+			},
+		},
+		{
+			name: "invalid ingress returns error",
+			ingress: &v1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "kube-system",
+				},
+				Spec: v1beta1.IngressSpec{
+					Rules: []v1beta1.IngressRule{
+						{Host: "{invalidhost"},
+					},
+				},
+			},
+			expectedErr: errors.New(`parse http://{invalidhost: invalid character "{" in host name`),
+		},
+		{
+			name: "returns source ranges for ingress",
+			ingress: &v1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "kube-system",
+				},
+				Spec: v1beta1.IngressSpec{
+					Rules: []v1beta1.IngressRule{
+						{Host: "foo.bar.baz"},
+					},
+				},
+			},
+			expected: []string{"1.2.3.4/32", "1.3.3.7/32"},
+			setup: func(p *fake.Provider) {
+				p.On("GetIPSourceRanges", &models.Monitor{
+					Name: "kube-system-foo",
+					URL:  "http://foo.bar.baz",
+				}).Return([]string{"1.2.3.4/32", "1.3.3.7/32"}, nil)
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			svc, provider := newTestService(t, &test.options)
+
+			if test.setup != nil {
+				test.setup(provider)
+			}
+
+			result, err := svc.GetProviderIPSourceRanges(test.ingress)
+			if test.expectedErr != nil {
+				require.Error(t, err)
+				assert.Equal(t, test.expectedErr.Error(), err.Error())
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, test.expected, result)
+			}
+		})
+	}
+}
+
 func newTestService(t *testing.T, options *config.Options) (*service, *fake.Provider) {
 	namer, err := NewNamer("{{.Namespace}}-{{.IngressName}}")
 	if err != nil {
