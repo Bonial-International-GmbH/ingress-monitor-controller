@@ -56,8 +56,6 @@ func (c *Controller) Run(stopCh <-chan struct{}) error {
 
 	defer c.queue.ShutDown()
 
-	klog.Info("starting controller")
-
 	go c.informer.Run(stopCh)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started.

@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"flag"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/admission"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/config"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/controller"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/monitor"
@@ -89,13 +92,54 @@ func Run(options *config.Options) error {
 		return errors.Wrapf(err, "initializing monitor service failed")
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	klog.Info("starting controller")
+
 	ctrl := controller.New(client, svc, options)
 
-	ctx, cancel := context.WithCancel(context.Background())
-
 	go handleSignals(cancel)
+	go func() {
+		defer cancel()
+		err := ctrl.Run(ctx.Done())
+		if err != nil {
+			klog.Error(err)
+		}
+	}()
 
-	return ctrl.Run(ctx.Done())
+	if options.EnableAdmission {
+		tlsConfig, err := options.TLSConfig()
+		if err != nil {
+			return errors.Wrapf(err, "loading tls config failed")
+		}
+
+		klog.Info("starting admission webhook")
+
+		webhook := admission.NewWebhook(svc)
+
+		mux := http.NewServeMux()
+		mux.HandleFunc("/admit", admission.HandlerFunc(webhook.Admit))
+
+		done := make(chan struct{})
+
+		srv := &http.Server{
+			Addr:      options.ListenAddr,
+			Handler:   mux,
+			TLSConfig: tlsConfig,
+		}
+
+		listenAndServeTLS(ctx, srv, done)
+		cancel()
+
+		<-done
+	}
+
+	<-ctx.Done()
+
+	klog.Info("exiting")
+
+	return nil
 }
 
 func handleSignals(cancelFunc func()) {
@@ -104,6 +148,31 @@ func handleSignals(cancelFunc func()) {
 	<-signals
 	klog.Info("received signal, terminating...")
 	cancelFunc()
+}
+
+func listenAndServeTLS(ctx context.Context, srv *http.Server, doneCh chan<- struct{}) {
+	go func() {
+		defer close(doneCh)
+
+		<-ctx.Done()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		klog.Info("gracefully stopping server")
+
+		err := srv.Shutdown(ctx)
+		if err != nil {
+			klog.Error(err)
+		}
+	}()
+
+	klog.Infof("listening on %s\n", srv.Addr)
+
+	err := srv.ListenAndServeTLS("", "")
+	if err != http.ErrServerClosed {
+		klog.Error(err)
+	}
 }
 
 // newClient returns a new Kubernetes client with the default config.
