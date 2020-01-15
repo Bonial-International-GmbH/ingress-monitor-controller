@@ -109,30 +109,10 @@ func Run(options *config.Options) error {
 	}()
 
 	if options.EnableAdmission {
-		tlsConfig, err := options.TLSConfig()
+		err := serveAdmissionWebhook(ctx, svc, options, cancel)
 		if err != nil {
-			return errors.Wrapf(err, "loading tls config failed")
+			return err
 		}
-
-		klog.Info("starting admission webhook")
-
-		webhook := admission.NewWebhook(svc)
-
-		mux := http.NewServeMux()
-		mux.HandleFunc("/admit", admission.HandlerFunc(webhook.Admit))
-
-		done := make(chan struct{})
-
-		srv := &http.Server{
-			Addr:      options.ListenAddr,
-			Handler:   mux,
-			TLSConfig: tlsConfig,
-		}
-
-		listenAndServeTLS(ctx, srv, done)
-		cancel()
-
-		<-done
 	}
 
 	<-ctx.Done()
@@ -148,6 +128,35 @@ func handleSignals(cancelFunc func()) {
 	<-signals
 	klog.Info("received signal, terminating...")
 	cancelFunc()
+}
+
+func serveAdmissionWebhook(ctx context.Context, svc monitor.Service, options *config.Options, cancel func()) error {
+	tlsConfig, err := options.TLSConfig()
+	if err != nil {
+		return errors.Wrapf(err, "loading tls config failed")
+	}
+
+	klog.Info("starting admission webhook")
+
+	webhook := admission.NewWebhook(svc)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/admit", admission.HandlerFunc(webhook.Admit))
+
+	done := make(chan struct{})
+
+	srv := &http.Server{
+		Addr:      options.ListenAddr,
+		Handler:   mux,
+		TLSConfig: tlsConfig,
+	}
+
+	listenAndServeTLS(ctx, srv, done)
+	cancel()
+
+	<-done
+
+	return nil
 }
 
 func listenAndServeTLS(ctx context.Context, srv *http.Server, doneCh chan<- struct{}) {
