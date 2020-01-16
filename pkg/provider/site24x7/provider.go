@@ -1,20 +1,24 @@
 package site24x7
 
 import (
+	"time"
+
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/config"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/models"
 	site24x7 "github.com/Bonial-International-GmbH/site24x7-go"
 	"github.com/Bonial-International-GmbH/site24x7-go/location"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/cache"
 	"k8s.io/klog"
 )
 
 // Provider manages Site24x7 website monitors.
 type Provider struct {
-	client     site24x7.Client
-	config     config.Site24x7Config
-	ipProvider *location.ProfileIPProvider
-	builder    *builder
+	client           site24x7.Client
+	config           config.Site24x7Config
+	ipProvider       *location.ProfileIPProvider
+	builder          *builder
+	sourceRangeCache *cache.Expiring
 }
 
 // NewProvider creates a new Site24x7 provider with given Site24x7Config.
@@ -26,9 +30,10 @@ func NewProvider(config config.Site24x7Config) *Provider {
 	})
 
 	return &Provider{
-		client:  client,
-		config:  config,
-		builder: newBuilder(client, config.MonitorDefaults),
+		client:           client,
+		config:           config,
+		builder:          newBuilder(client, config.MonitorDefaults),
+		sourceRangeCache: cache.NewExpiring(),
 	}
 }
 
@@ -120,6 +125,11 @@ func (p *Provider) GetIPSourceRanges(model *models.Monitor) ([]string, error) {
 		return nil, err
 	}
 
+	cachedSourceRanges, ok := p.sourceRangeCache.Get(monitor.LocationProfileID)
+	if ok {
+		return cachedSourceRanges.([]string), nil
+	}
+
 	ipProvider, err := p.getProfileIPProvider()
 	if err != nil {
 		return nil, err
@@ -141,6 +151,9 @@ func (p *Provider) GetIPSourceRanges(model *models.Monitor) ([]string, error) {
 	for i, ip := range locationIPs {
 		sourceRanges[i] = ip + "/32"
 	}
+
+	// Location profiles rarely change so we can just cache them for a day.
+	p.sourceRangeCache.Set(monitor.LocationProfileID, sourceRanges, 24*time.Hour)
 
 	return sourceRanges, nil
 }
