@@ -52,7 +52,6 @@ The following CLI flags are available:
 | `--provider-config` | Location of the config file for the monitor providers.                                | `""`                              |
 | `--name-template`   | The template to use for the monitor name. Valid fields are: .IngressName, .Namespace. | `{{.Namespace}}-{{.IngressName}}` |
 | `--namespace`       | Namespace to watch. If empty, all namespaces are watched.                             | `""`                              |
-| `--resync-interval` | Duration after which to recheck all ingresses. `0` disables resync.                   | `1h`                              |
 | `--creation-delay`  | Duration to wait after an ingress is created before creating the monitor for it.      | `0s`                              |
 | `--no-delete`       | If set, monitors will not be deleted if the ingress is deleted.                       | `false`                           |
 
@@ -166,11 +165,10 @@ if the following rules apply:
   automatically.
 
 To make use of the admission webhook you have to start the controller with the
-`--enable-admission` flag to start the HTTP server for the webhook. This will
-also require to provide valid TLS certificate and private key via the the
-`--tls-cert-file` and `--tls-private-key-file` flags. The listen address of the
-admission controller can be configured via `--listen-addr` and defaults to
-`0.0.0.0:443`.
+`--enable-admission` flag to start the HTTP server (listening on `:443`) for
+the webhook (at `/admit`). This will also require to provide valid TLS
+certificate and private key via the the `--tls-cert-dir` flag. The directory is
+expected to contain the files `tls.key` and `tls.crt`.
 
 You also need to create a `Service` and a `MutatingWebhookConfiguration`
 similar to this:

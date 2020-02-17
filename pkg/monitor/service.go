@@ -25,6 +25,10 @@ type Service interface {
 	// blocks. These source ranges can be used to update the IP whitelist (if
 	// one is defined) of an ingress to allow checks by the monitor provider.
 	GetProviderIPSourceRanges(ingress *v1beta1.Ingress) ([]string, error)
+
+	// AnnotateIngress updates annotations of ingress if needed. If annotations
+	// were added, updated or deleted, the return value will be true.
+	AnnotateIngress(ingress *v1beta1.Ingress) (updated bool, err error)
 }
 
 type service struct {

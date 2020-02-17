@@ -2,139 +2,150 @@ package admission
 
 import (
 	"bytes"
+	"context"
+	gojson "encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
+	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/monitor"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"k8s.io/api/admission/v1beta1"
+	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	"k8s.io/api/extensions/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-func TestHandleAdmissionRequest(t *testing.T) {
+type mockService struct {
+	mock.Mock
+	monitor.Service
+}
+
+func (m *mockService) AnnotateIngress(ingress *v1beta1.Ingress) (bool, error) {
+	args := m.Called(ingress)
+	updated := args.Bool(0)
+	if updated {
+		if ingress.Annotations == nil {
+			ingress.Annotations = map[string]string{}
+		}
+
+		ingress.Annotations["foobar"] = "baz"
+	}
+
+	return args.Bool(0), args.Error(1)
+}
+
+func TestIngressHandler_Handle(t *testing.T) {
 	tests := []struct {
-		name               string
-		requestMethod      string
-		requestHeaders     map[string]string
-		admitFunc          func(*v1beta1.AdmissionRequest) (*v1beta1.AdmissionResponse, error)
-		requestBody        []byte
-		expectedStatusCode int
-		expectedResponse   []byte
+		name     string
+		req      admission.Request
+		expected admission.Response
+		setup    func(*mockService)
 	}{
 		{
-			name:               "only accepts POST requests",
-			requestMethod:      "GET",
-			expectedResponse:   []byte(`invalid method "GET", only POST requests are allowed`),
-			expectedStatusCode: http.StatusMethodNotAllowed,
-		},
-		{
-			name:               "request must have json content-type",
-			requestMethod:      "POST",
-			requestHeaders:     map[string]string{"Content-Type": "application/xml"},
-			expectedResponse:   []byte(`unsupported content type "application/xml", expected "application/json"`),
-			expectedStatusCode: http.StatusBadRequest,
-		},
-		{
-			name:               "request must contain valid json",
-			requestMethod:      "POST",
-			requestHeaders:     map[string]string{"Content-Type": "application/json"},
-			requestBody:        []byte(`invalid json`),
-			expectedResponse:   []byte(`could not deserialize request: couldn't get version/kind; json parse error: json: cannot unmarshal string into Go value of type struct { APIVersion string "json:\"apiVersion,omitempty\""; Kind string "json:\"kind,omitempty\"" }`),
-			expectedStatusCode: http.StatusBadRequest,
-		},
-		{
-			name:               "admission review must contain a request",
-			requestMethod:      "POST",
-			requestHeaders:     map[string]string{"Content-Type": "application/json"},
-			requestBody:        serializeObject(t, &v1beta1.AdmissionReview{}),
-			expectedResponse:   []byte(`malformed admission review: request is nil`),
-			expectedStatusCode: http.StatusBadRequest,
-		},
-		{
-			name:           "executes admitFunc with request",
-			requestMethod:  "POST",
-			requestHeaders: map[string]string{"Content-Type": "application/json"},
-			requestBody: serializeObject(t, &v1beta1.AdmissionReview{
-				Request: newAdmissionRequestBuilder(t).build(),
-			}),
-			admitFunc: func(*v1beta1.AdmissionRequest) (*v1beta1.AdmissionResponse, error) {
-				return allowedResponse(), nil
+			name: "returns admission error if object is not a valid ingress",
+			req: admission.Request{
+				AdmissionRequest: admissionv1beta1.AdmissionRequest{
+					Object: runtime.RawExtension{
+						Raw: []byte(`iaminvalid`),
+					},
+				},
 			},
-			expectedResponse:   []byte(`{"response":{"uid":"","allowed":true}}`),
-			expectedStatusCode: http.StatusOK,
+			expected: admission.Errored(http.StatusBadRequest, errors.New(`couldn't get version/kind; json parse error: json: cannot unmarshal string into Go value of type struct { APIVersion string "json:\"apiVersion,omitempty\""; Kind string "json:\"kind,omitempty\"" }`)),
 		},
 		{
-			name:           "attaches request UID to response",
-			requestMethod:  "POST",
-			requestHeaders: map[string]string{"Content-Type": "application/json"},
-			requestBody: serializeObject(t, &v1beta1.AdmissionReview{
-				Request: newAdmissionRequestBuilder(t).withUID("1234567890").build(),
-			}),
-			admitFunc: func(*v1beta1.AdmissionRequest) (*v1beta1.AdmissionResponse, error) {
-				return allowedResponse(), nil
+			name: "allows ingresses that do not need to be annotated",
+			req: admission.Request{
+				AdmissionRequest: admissionv1beta1.AdmissionRequest{
+					Object: runtime.RawExtension{
+						Raw: serializeObject(t, &v1beta1.Ingress{}),
+					},
+				},
 			},
-			expectedResponse:   []byte(`{"response":{"uid":"1234567890","allowed":true}}`),
-			expectedStatusCode: http.StatusOK,
+			setup: func(m *mockService) {
+				m.On("AnnotateIngress", mock.Anything).Return(false, nil)
+			},
+			expected: admission.Allowed(""),
 		},
 		{
-			name:           "json patch is included in the response",
-			requestMethod:  "POST",
-			requestHeaders: map[string]string{"Content-Type": "application/json"},
-			requestBody: serializeObject(t, &v1beta1.AdmissionReview{
-				Request: newAdmissionRequestBuilder(t).withUID("1234567890").build(),
-			}),
-			admitFunc: func(*v1beta1.AdmissionRequest) (*v1beta1.AdmissionResponse, error) {
-				return newAdmissionResponseBuilder(t).
-					withJSONPatch([]patchOperation{
-						{
-							Op: "add", Path: "/metadata/labels/foo", Value: "bar",
+			name: "does not deny if annotating ingress fails",
+			req: admission.Request{
+				AdmissionRequest: admissionv1beta1.AdmissionRequest{
+					Object: runtime.RawExtension{
+						Raw: serializeObject(t, &v1beta1.Ingress{}),
+					},
+				},
+			},
+			setup: func(m *mockService) {
+				m.On("AnnotateIngress", mock.Anything).Return(false, errors.New("whoops"))
+			},
+			expected: admission.Allowed(""),
+		},
+		{
+			name: "creates json patch",
+			req: admission.Request{
+				AdmissionRequest: admissionv1beta1.AdmissionRequest{
+					Object: runtime.RawExtension{
+						Raw: serializeObject(t, &v1beta1.Ingress{}),
+					},
+				},
+			},
+			setup: func(m *mockService) {
+				m.On("AnnotateIngress", mock.Anything).Return(true, nil)
+			},
+			expected: func() admission.Response {
+				raw := serializeObject(t, &v1beta1.Ingress{})
+
+				buf, err := gojson.Marshal(&v1beta1.Ingress{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							"foobar": "baz",
 						},
-					}).
-					build(), nil
-			},
-			expectedResponse:   []byte(`{"response":{"uid":"1234567890","allowed":true,"patch":"W3sib3AiOiJhZGQiLCJwYXRoIjoiL21ldGFkYXRhL2xhYmVscy9mb28iLCJ2YWx1ZSI6ImJhciJ9XQ==","patchType":"JSONPatch"}}`),
-			expectedStatusCode: http.StatusOK,
-		},
-		{
-			name:           "admission errors produce rejected responses with status message",
-			requestMethod:  "POST",
-			requestHeaders: map[string]string{"Content-Type": "application/json"},
-			requestBody: serializeObject(t, &v1beta1.AdmissionReview{
-				Request: newAdmissionRequestBuilder(t).withUID("1234567890").build(),
-			}),
-			admitFunc: func(*v1beta1.AdmissionRequest) (*v1beta1.AdmissionResponse, error) {
-				return nil, errors.New("nope, just nope")
-			},
-			expectedResponse:   []byte(`{"response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"message":"nope, just nope"}}}`),
-			expectedStatusCode: http.StatusOK,
+					},
+				})
+				require.NoError(t, err)
+
+				return admission.PatchResponseFromRaw(raw, buf)
+			}(),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			server := httptest.NewServer(HandlerFunc(test.admitFunc))
-			defer server.Close()
+			mockSvc := &mockService{}
 
-			buf := bytes.NewBuffer(test.requestBody)
-
-			req, err := http.NewRequest(test.requestMethod, server.URL, buf)
-			require.NoError(t, err)
-
-			for key, val := range test.requestHeaders {
-				req.Header.Set(key, val)
+			if test.setup != nil {
+				test.setup(mockSvc)
 			}
 
-			resp, err := http.DefaultClient.Do(req)
-			require.NoError(t, err)
-			defer resp.Body.Close()
-
-			responseBody, err := ioutil.ReadAll(resp.Body)
+			d, err := admission.NewDecoder(runtime.NewScheme())
 			require.NoError(t, err)
 
-			assert.Equal(t, test.expectedStatusCode, resp.StatusCode)
-			assert.Equal(t, string(test.expectedResponse), string(responseBody))
+			h := &IngressHandler{
+				monitorService: mockSvc,
+				decoder:        d,
+			}
+
+			resp := h.Handle(context.Background(), test.req)
+
+			assert.Equal(t, test.expected, resp)
 		})
 	}
+}
+
+func serializeObject(t *testing.T, obj runtime.Object) []byte {
+	encoder := json.NewSerializer(json.DefaultMetaFactory, nil, nil, false)
+
+	var buf bytes.Buffer
+
+	err := encoder.Encode(obj, &buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return buf.Bytes()
 }
