@@ -11,6 +11,7 @@ import (
 	"github.com/Bonial-International-GmbH/site24x7-go/location"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/util/cache"
 )
 
 func TestProvider_Create(t *testing.T) {
@@ -464,13 +465,63 @@ func TestProvider_GetIPSourceRanges(t *testing.T) {
 	}
 }
 
+func TestProvider_GetIPSourceRanges_Cache(t *testing.T) {
+	p, c := newTestProvider(config.Site24x7Config{})
+	p.ipProvider = &location.ProfileIPProvider{
+		IPSource: &location.StaticIPSource{
+			LocationIPs: map[string][]string{
+				"789": []string{"1.3.3.7", "0.8.1.5"},
+				"123": []string{"1.2.3.4", "5.6.7.8"},
+				"456": []string{"1.1.1.1", "2.2.2.2"},
+			},
+		},
+		Locations: []*site24x7api.Location{
+			{LocationID: "123"},
+			{LocationID: "456"},
+		},
+	}
+
+	locationProfile := &site24x7api.LocationProfile{
+		ProfileID:          "1",
+		PrimaryLocation:    "456",
+		SecondaryLocations: []string{"123"},
+	}
+
+	// Only expect one API call to fetch the location profile
+	c.FakeLocationProfiles.On("Get", "456").Return(locationProfile, nil).Once()
+
+	model := &models.Monitor{
+		ID:   "12345678",
+		Name: "foobar",
+		URL:  "https://foo.bar.baz",
+		Annotations: config.Annotations{
+			config.AnnotationSite24x7NotificationProfileID: "1234",
+			config.AnnotationSite24x7LocationProfileID:     "456",
+			config.AnnotationSite24x7ThresholdProfileID:    "67890",
+			config.AnnotationSite24x7MonitorGroupIDs:       "12,34,56,78",
+			config.AnnotationSite24x7UserGroupIDs:          "111,222,333",
+		},
+	}
+
+	expected := []string{"1.1.1.1/32", "2.2.2.2/32", "1.2.3.4/32", "5.6.7.8/32"}
+
+	ips, err := p.GetIPSourceRanges(model)
+	require.NoError(t, err)
+	require.Equal(t, expected, ips)
+
+	ips2, err := p.GetIPSourceRanges(model)
+	require.NoError(t, err)
+	require.Equal(t, ips, ips2)
+}
+
 func newTestProvider(config config.Site24x7Config) (*Provider, *fake.Client) {
 	client := fake.NewClient()
 
 	provider := &Provider{
-		client:  client,
-		config:  config,
-		builder: newBuilder(client, config.MonitorDefaults),
+		client:           client,
+		config:           config,
+		builder:          newBuilder(client, config.MonitorDefaults),
+		sourceRangeCache: cache.NewExpiring(),
 	}
 
 	return provider, client
