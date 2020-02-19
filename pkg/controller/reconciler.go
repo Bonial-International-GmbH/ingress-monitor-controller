@@ -48,17 +48,15 @@ func (r *IngressReconciler) Reconcile(req reconcile.Request) (reconcile.Result, 
 
 		err = r.monitorService.DeleteMonitor(ingress)
 	} else if err == nil {
-		createAfter := time.Until(ingress.CreationTimestamp.Add(r.creationDelay))
+		if ingress.Annotations[config.AnnotationEnabled] == "true" {
+			createAfter := time.Until(ingress.CreationTimestamp.Add(r.creationDelay))
 
-		// If a creation delay was configured, we will requeue the
-		// reconciliation until after the creation delay passed.
-		if createAfter > 0 {
-			return reconcile.Result{RequeueAfter: createAfter}, nil
-		}
+			// If a creation delay was configured, we will requeue the
+			// reconciliation until after the creation delay passed.
+			if createAfter > 0 {
+				return reconcile.Result{RequeueAfter: createAfter}, nil
+			}
 
-		annotations := config.Annotations(ingress.Annotations)
-
-		if annotations.BoolValue(config.AnnotationEnabled) {
 			err = r.monitorService.EnsureMonitor(ingress)
 		} else {
 			err = r.monitorService.DeleteMonitor(ingress)
