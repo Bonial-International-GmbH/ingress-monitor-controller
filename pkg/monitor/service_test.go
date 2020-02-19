@@ -228,7 +228,7 @@ func TestService_GetProviderIPSourceRanges(t *testing.T) {
 		options     config.Options
 		setup       func(*fake.Provider)
 		expected    []string
-		expectedErr error
+		expectError bool
 	}{
 		{
 			name: "unsupported ingresses produce empty result and no error",
@@ -252,7 +252,7 @@ func TestService_GetProviderIPSourceRanges(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: errors.New(`parse http://{invalidhost: invalid character "{" in host name`),
+			expectError: true,
 		},
 		{
 			name: "returns source ranges for ingress",
@@ -286,9 +286,8 @@ func TestService_GetProviderIPSourceRanges(t *testing.T) {
 			}
 
 			result, err := svc.GetProviderIPSourceRanges(test.ingress)
-			if test.expectedErr != nil {
+			if test.expectError {
 				require.Error(t, err)
-				assert.Equal(t, test.expectedErr.Error(), err.Error())
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, test.expected, result)

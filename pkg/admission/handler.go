@@ -1,102 +1,63 @@
 package admission
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 
-	"k8s.io/api/admission/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/monitor"
+	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/klog"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-const jsonContentType = "application/json"
-
-// universalDeserializer can convert raw data into Go objects that satisfy runtime.Object.
-var universalDeserializer = serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
-
-// AdmitFunc is the signature of a function that handles admission requests.
-type AdmitFunc func(*v1beta1.AdmissionRequest) (*v1beta1.AdmissionResponse, error)
-
-// HandlerFunc wraps the AdmitFunc f in an http.HandlerFunc.
-func HandlerFunc(f AdmitFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handleAdmissionRequest(w, r, f)
-	})
+// IngressHandler provides a mutating webhook that updates ingress annotations
+// if necessary.
+type IngressHandler struct {
+	decoder        *admission.Decoder
+	monitorService monitor.Service
 }
 
-// handleAdmissionRequest handles the http portion of a request prior to
-// handing to an admit function.
-func handleAdmissionRequest(w http.ResponseWriter, r *http.Request, admit AdmitFunc) {
-	bytes, err := doHandleAdmissionRequest(w, r, admit)
-	if err != nil {
-		bytes = []byte(err.Error())
-	}
-
-	if _, err = w.Write(bytes); err != nil {
-		klog.Errorf("could not write response: %v", err)
+// NewIngressHandler creates a new *IngressHandler which uses monitorService to
+// update ingress annotations.
+func NewIngressHandler(monitorService monitor.Service) *IngressHandler {
+	return &IngressHandler{
+		monitorService: monitorService,
 	}
 }
 
-// doHandleAdmissionRequest handles the http portion of a request prior to
-// handing to an admit function.
-func doHandleAdmissionRequest(w http.ResponseWriter, r *http.Request, admit AdmitFunc) ([]byte, error) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return nil, fmt.Errorf(`invalid method %q, only POST requests are allowed`, r.Method)
-	}
+// Handle handles admission requests for ingress objects and will mutate their
+// annotations if required. Handle implements admission.Handler.
+func (h *IngressHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
+	ingress := &v1beta1.Ingress{}
 
-	body, err := ioutil.ReadAll(r.Body)
+	err := h.decoder.Decode(req, ingress)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return nil, fmt.Errorf("could not read request body: %v", err)
+		return admission.Errored(http.StatusBadRequest, err)
 	}
 
-	if contentType := r.Header.Get("Content-Type"); contentType != jsonContentType {
-		w.WriteHeader(http.StatusBadRequest)
-		return nil, fmt.Errorf("unsupported content type %q, expected %q", contentType, jsonContentType)
-	}
+	klog.V(5).Infof("decoded ingress object %#v", ingress)
 
-	// The AdmissionReview that was sent to the webhook
-	requestedAdmissionReview := v1beta1.AdmissionReview{}
-
-	_, _, err = universalDeserializer.Decode(body, nil, &requestedAdmissionReview)
+	updated, err := h.monitorService.AnnotateIngress(ingress)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return nil, fmt.Errorf("could not deserialize request: %v", err)
-	} else if requestedAdmissionReview.Request == nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return nil, errors.New("malformed admission review: request is nil")
+		klog.Errorf("skipping update of source range whitelist for ingress %s/%s due to: %v", ingress.Namespace, ingress.Name, err)
+		return admission.Allowed("")
 	}
 
-	klog.V(4).Infof("handling request: %s", requestedAdmissionReview.Request.UID)
+	if !updated {
+		return admission.Allowed("")
+	}
 
-	// The AdmissionReview that will be returned
-	responseAdmissionReview := v1beta1.AdmissionReview{}
-
-	responseAdmissionReview.Response, err = admit(requestedAdmissionReview.Request)
+	buf, err := json.Marshal(ingress)
 	if err != nil {
-		responseAdmissionReview.Response = &v1beta1.AdmissionResponse{
-			Result: &metav1.Status{
-				Message: err.Error(),
-			},
-		}
+		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	// Ensure that the request UID is set in the response
-	responseAdmissionReview.Response.UID = requestedAdmissionReview.Request.UID
+	return admission.PatchResponseFromRaw(req.Object.Raw, buf)
+}
 
-	klog.V(5).Infof("sending response: %v", responseAdmissionReview.Response)
-
-	bytes, err := json.Marshal(responseAdmissionReview)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return nil, fmt.Errorf("failed to marshal admission response: %v", err)
-	}
-
-	return bytes, nil
+// InjectDecoder implements admission.DecoderInjector.
+func (h *IngressHandler) InjectDecoder(d *admission.Decoder) error {
+	h.decoder = d
+	return nil
 }
