@@ -6,8 +6,10 @@ import (
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/models"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/provider"
 	"k8s.io/api/extensions/v1beta1"
-	"k8s.io/klog"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
+
+var log = logf.Log.WithName("monitor-service")
 
 // Service defines the interface for a service that takes care of creating,
 // updating or deleting monitors.
@@ -63,7 +65,7 @@ func NewService(options *config.Options) (Service, error) {
 func (s *service) EnsureMonitor(ing *v1beta1.Ingress) error {
 	err := ingress.Validate(ing)
 	if err != nil {
-		klog.V(1).Infof(`ignoring unsupported ingress "%s/%s": %v`, ing.Namespace, ing.Name, err)
+		log.V(1).Info("ignoring unsupported ingress", "namespace", ing.Namespace, "name", ing.Name, "error", err)
 		return nil
 	}
 
@@ -90,7 +92,7 @@ func (s *service) DeleteMonitor(ingress *v1beta1.Ingress) error {
 	}
 
 	if s.options.NoDelete {
-		klog.V(1).Infof("not deleting monitor %q because monitor deletion is disabled", name)
+		log.V(1).Info("monitor deletion is disabled, not deleting", "monitor", name)
 		return nil
 	}
 
@@ -103,7 +105,7 @@ func (s *service) createMonitor(monitor *models.Monitor) error {
 		return err
 	}
 
-	klog.Infof("monitor %q created", monitor.Name)
+	log.Info("monitor created", "monitor", monitor.Name)
 
 	return nil
 }
@@ -116,7 +118,7 @@ func (s *service) updateMonitor(oldMonitor, newMonitor *models.Monitor) error {
 		return err
 	}
 
-	klog.Infof("monitor %q updated", newMonitor.Name)
+	log.Info("monitor updated", "monitor", newMonitor.Name)
 
 	return nil
 }
@@ -124,13 +126,13 @@ func (s *service) updateMonitor(oldMonitor, newMonitor *models.Monitor) error {
 func (s *service) deleteMonitor(name string) error {
 	err := s.provider.Delete(name)
 	if err == models.ErrMonitorNotFound {
-		klog.V(4).Infof("monitor %q is not present", name)
+		log.V(1).Info("monitor is not present", "monitor", name)
 		return nil
 	} else if err != nil {
 		return err
 	}
 
-	klog.Infof("monitor %q deleted", name)
+	log.Info("monitor deleted", "monitor", name)
 
 	return nil
 }
@@ -159,7 +161,7 @@ func (s *service) buildMonitorModel(ing *v1beta1.Ingress) (*models.Monitor, erro
 func (s *service) GetProviderIPSourceRanges(ing *v1beta1.Ingress) ([]string, error) {
 	err := ingress.Validate(ing)
 	if err != nil {
-		klog.V(1).Infof(`ignoring unsupported ingress "%s/%s": %v`, ing.Namespace, ing.Name, err)
+		log.V(1).Info("ignoring unsupported ingress", "namespace", ing.Namespace, "name", ing.Name, "error", err)
 		return nil, nil
 	}
 

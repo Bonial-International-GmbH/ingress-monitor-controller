@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/config"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/controller"
@@ -9,23 +11,21 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"k8s.io/api/extensions/v1beta1"
-	"k8s.io/klog"
-	ctrl "sigs.k8s.io/controller-runtime"
+	runtime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	restconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
-func init() {
-	klog.InitFlags(flag.CommandLine)
-	flag.Set("logtostderr", "true")
+var (
+	debug bool
 
-	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-}
+	log = logf.Log.WithName("main")
+)
 
 // NewRootCommand creates a new *cobra.Command that is used as the root command
 // for ingress-monitor-controller.
@@ -37,6 +37,9 @@ func NewRootCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Args:          cobra.NoArgs,
+		PersistentPreRun: func(_ *cobra.Command, _ []string) {
+			runtime.SetLogger(zap.New(zap.UseDevMode(debug)))
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := options.Validate()
 			if err != nil {
@@ -57,17 +60,18 @@ func main() {
 
 	cmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
 
+	cmd.PersistentFlags().BoolVar(&debug, "debug", debug, "Enable debug logging.")
+
 	if err := cmd.Execute(); err != nil {
-		klog.Fatal(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }
 
 // Run sets up that controller and initiates the controller loop.
 func Run(options *config.Options) error {
-	ctrl.SetLogger(zap.Logger(true))
-
 	if options.ProviderConfigFile != "" {
-		klog.V(1).Infof("loading provider config from %s", options.ProviderConfigFile)
+		log.V(1).Info("loading provider config", "config-file", options.ProviderConfigFile)
 
 		providerConfig, err := config.ReadProviderConfig(options.ProviderConfigFile)
 		if err != nil {
@@ -79,8 +83,6 @@ func Run(options *config.Options) error {
 			return errors.Wrapf(err, "failed to merge provider configs")
 		}
 	}
-
-	klog.V(4).Infof("running with options: %+v", options)
 
 	mgr, err := manager.New(restconfig.GetConfigOrDie(), manager.Options{})
 	if err != nil {
@@ -96,6 +98,7 @@ func Run(options *config.Options) error {
 
 	err = builder.
 		ControllerManagedBy(mgr).
+		Named("ingress-monitor-controller").
 		For(&v1beta1.Ingress{}).
 		Complete(reconciler)
 	if err != nil {

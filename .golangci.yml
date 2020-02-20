@@ -4,7 +4,7 @@ run:
 
 linters-settings:
   errcheck:
-    ignore: flag:Set
+    ignore: flag:Set,fmt:[FS]?[Pp]rint*
 linters:
   enable:
     - whitespace

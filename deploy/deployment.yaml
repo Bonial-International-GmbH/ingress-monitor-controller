@@ -22,7 +22,7 @@ spec:
           image: ingress-monitor-controller:latest
           imagePullPolicy: IfNotPresent
           args:
-            - --v=4
+            - --debug
             - --provider=site24x7
             - --provider-config=/config/providers.yaml
           envFrom:

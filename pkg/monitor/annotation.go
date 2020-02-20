@@ -5,15 +5,16 @@ import (
 
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/config"
 	"k8s.io/api/extensions/v1beta1"
-	"k8s.io/klog"
 )
 
 const nginxWhitelistSourceRangeAnnotation = "nginx.ingress.kubernetes.io/whitelist-source-range"
 
 // AnnotateIngress implements Service.
 func (s *service) AnnotateIngress(ingress *v1beta1.Ingress) (bool, error) {
+	log := log.WithValues("namespace", ingress.Namespace, "name", ingress.Name)
+
 	if !shouldPatchSourceRangeWhitelist(ingress) {
-		klog.V(4).Infof("ingress %s/%s does not require patching of source range whitelist", ingress.Namespace, ingress.Name)
+		log.V(1).Info("ingress does not require patching of source range whitelist")
 		return false, nil
 	}
 
@@ -23,7 +24,7 @@ func (s *service) AnnotateIngress(ingress *v1beta1.Ingress) (bool, error) {
 	}
 
 	if len(providerSourceRanges) == 0 {
-		klog.V(4).Infof("no provider source ranges available for ingress %s/%s", ingress.Namespace, ingress.Name)
+		log.V(1).Info("no provider source ranges available for ingress")
 		return false, nil
 	}
 
@@ -31,11 +32,11 @@ func (s *service) AnnotateIngress(ingress *v1beta1.Ingress) (bool, error) {
 
 	sourceRanges, updated := mergeProviderSourceRanges(sourceRanges, providerSourceRanges)
 	if !updated {
-		klog.V(4).Infof("no source range update needed for ingress %s/%s", ingress.Namespace, ingress.Name)
+		log.V(1).Info("no source range update needed for ingress")
 		return false, nil
 	}
 
-	klog.Infof("patching ingress %s/%s", ingress.Namespace, ingress.Name)
+	log.Info("patching ingress")
 
 	ingress.Annotations[nginxWhitelistSourceRangeAnnotation] = strings.Join(sourceRanges, ",")
 
@@ -69,7 +70,7 @@ func mergeProviderSourceRanges(sourceRanges, providerSourceRanges []string) ([]s
 		return sourceRanges, false
 	}
 
-	klog.Infof("missing source ranges: %v", missingSourceRanges)
+	log.Info("missing source ranges", "cidr block", missingSourceRanges)
 
 	sourceRanges = append(sourceRanges, missingSourceRanges...)
 
