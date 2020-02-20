@@ -22,9 +22,7 @@ type Options struct {
 	Namespace          string
 	ProviderName       string
 	NameTemplate       string
-	TLSCertDir         string
 	NoDelete           bool
-	EnableAdmission    bool
 	CreationDelay      time.Duration
 	ProviderConfig     ProviderConfig
 }
@@ -46,8 +44,6 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.Namespace, "namespace", o.Namespace, "Namespace to watch. If empty, all namespaces are watched.")
 	cmd.Flags().StringVar(&o.ProviderConfigFile, "provider-config", o.ProviderConfigFile, "Location of the config file for the monitor providers.")
 	cmd.Flags().StringVar(&o.ProviderName, "provider", o.ProviderName, "The provider to use for creating monitors.")
-	cmd.Flags().StringVar(&o.TLSCertDir, "tls-cert-dir", o.TLSCertDir, "Directory containing tls.crt and tls.key for the admission controller.")
-	cmd.Flags().BoolVar(&o.EnableAdmission, "enable-admission", o.EnableAdmission, "If set, an admission controller will be launched listening at the configured address. The admission controller will automatically add IP whitelistings for the provider source ranges on the ingress objects if needed.")
 }
 
 // Validate validates options.

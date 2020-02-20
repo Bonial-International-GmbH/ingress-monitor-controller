@@ -148,12 +148,11 @@ annotations. For a full list of supported annotations check out the constants
 and their documentation in
 [`pkg/config/annotations.go`](pkg/config/annotations.go).
 
-### Admission Webhook
+### Source Range Rewriting
 
-The `ingress-monitor-controller` also provides an admission webhook which
-automatically adds the monitor provider's source IP ranges to the
-`nginx.ingress.kubernetes.io/whitelist-source-range` annotation of an ingress
-if the following rules apply:
+The `ingress-monitor-controller` will automatically adds the monitor provider's
+source IP ranges to the `nginx.ingress.kubernetes.io/whitelist-source-range`
+annotation of an ingress if the following rules apply:
 
 - If the `ingress-monitor.bonial.com/enabled` annotation is `false` or not
   present, do nothing.
@@ -163,53 +162,3 @@ if the following rules apply:
 - If the provider source ranges are not already present in the
   `nginx.ingress.kubernetes.io/whitelist-source-range` annotation, add them
   automatically.
-
-To make use of the admission webhook you have to start the controller with the
-`--enable-admission` flag to start the HTTP server (listening on `:443`) for
-the webhook (at `/admit`). This will also require to provide valid TLS
-certificate and private key via the the `--tls-cert-dir` flag. The directory is
-expected to contain the files `tls.key` and `tls.crt`.
-
-You also need to create a `Service` and a `MutatingWebhookConfiguration`
-similar to this:
-
-```yaml
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: ingress-monitor-controller
-spec:
-  ports:
-    - name: https
-      port: 443
-      targetPort: 443
-  selector:
-    app: ingress-monitor-controller
-
----
-apiVersion: admissionregistration.k8s.io/v1beta1
-kind: MutatingWebhookConfiguration
-metadata:
-  name: ingress-monitor-controller
-webhooks:
-  - name: ingress-monitor-controller.bonial.com
-    clientConfig:
-      service:
-        name: ingress-monitor-controller
-        namespace: kube-system
-        path: /admit
-      caBundle: [...the CA bundle...]
-    failurePolicy: Ignore
-    sideEffects: None
-    rules:
-      - operations:
-          - CREATE
-          - UPDATE
-        apiGroups:
-          - extensions
-        apiVersions:
-          - '*'
-        resources:
-          - ingresses
-```

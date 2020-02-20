@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 
-	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/admission"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/config"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/controller"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/monitor"
@@ -19,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 func init() {
@@ -84,9 +82,7 @@ func Run(options *config.Options) error {
 
 	klog.V(4).Infof("running with options: %+v", options)
 
-	mgr, err := manager.New(restconfig.GetConfigOrDie(), manager.Options{
-		CertDir: options.TLSCertDir,
-	})
+	mgr, err := manager.New(restconfig.GetConfigOrDie(), manager.Options{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create controller manager")
 	}
@@ -104,14 +100,6 @@ func Run(options *config.Options) error {
 		Complete(reconciler)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create controller")
-	}
-
-	if options.EnableAdmission {
-		whs := mgr.GetWebhookServer()
-
-		whs.Register("/admit", &webhook.Admission{
-			Handler: admission.NewIngressHandler(svc),
-		})
 	}
 
 	err = mgr.Start(signals.SetupSignalHandler())
