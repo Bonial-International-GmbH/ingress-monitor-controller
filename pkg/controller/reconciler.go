@@ -57,11 +57,49 @@ func (r *IngressReconciler) Reconcile(req reconcile.Request) (reconcile.Result, 
 				return reconcile.Result{RequeueAfter: createAfter}, nil
 			}
 
-			err = r.monitorService.EnsureMonitor(ingress)
+			err = r.handleCreateOrUpdate(ingress)
 		} else {
 			err = r.monitorService.DeleteMonitor(ingress)
 		}
 	}
 
 	return reconcile.Result{}, err
+}
+
+func (r *IngressReconciler) handleCreateOrUpdate(ingress *v1beta1.Ingress) error {
+	updated, err := r.reconcileAnnotations(ingress)
+	if err != nil || updated {
+		// In case of an error we return it here to force requeuing of the
+		// reconciliation request. If the ingress was updated, we return
+		// here as well because the update will cause the creation of a new
+		// ingress update event which will be consumed by Reconcile and we
+		// want to avoid duplicate execution of the EnsureMonitor logic. This
+		// is an optimization to avoid unnecessary API calls to the monitor
+		// provider.
+		return err
+	}
+
+	return r.monitorService.EnsureMonitor(ingress)
+}
+
+// reconcileAnnotations reconciles the ingress annotations, that is, it may
+// update the nginx.ingress.kubernetes.io/whitelist-source-range annotation
+// with ip source ranges of the monitor provider. If annotations were updated,
+// it will update the ingress object on the cluster and return true and the
+// first return value. The will effectively cause the creation of a new ingress
+// update event which is then picked up by the reconciler.
+func (r *IngressReconciler) reconcileAnnotations(ingress *v1beta1.Ingress) (updated bool, err error) {
+	ingressCopy := ingress.DeepCopy()
+
+	updated, err = r.monitorService.AnnotateIngress(ingressCopy)
+	if err != nil || !updated {
+		return false, err
+	}
+
+	err = r.Update(context.Background(), ingressCopy)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }

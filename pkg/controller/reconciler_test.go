@@ -64,7 +64,7 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 				})
 			},
 			setup: func(s *fake.Service) {
-				s.On("EnsureMonitor", &v1beta1.Ingress{
+				ing := &v1beta1.Ingress{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Ingress",
 						APIVersion: "extensions/v1beta1",
@@ -76,7 +76,47 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 							config.AnnotationEnabled: "true",
 						},
 					},
-				}).Return(nil)
+				}
+
+				s.On("AnnotateIngress", ing).Return(false, nil)
+				s.On("EnsureMonitor", ing).Return(nil)
+			},
+		},
+		{
+			name: "it first updates the ingress if it receives annotation update, but does not update the monitor",
+			req: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "bar",
+					Namespace: "kube-system",
+				},
+			},
+			clientFn: func() client.Client {
+				return fakeclient.NewFakeClient(&v1beta1.Ingress{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "bar",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							config.AnnotationEnabled: "true",
+						},
+					},
+				})
+			},
+			setup: func(s *fake.Service) {
+				ing := &v1beta1.Ingress{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Ingress",
+						APIVersion: "extensions/v1beta1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "bar",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							config.AnnotationEnabled: "true",
+						},
+					},
+				}
+
+				s.On("AnnotateIngress", ing).Return(true, nil)
 			},
 		},
 		{
