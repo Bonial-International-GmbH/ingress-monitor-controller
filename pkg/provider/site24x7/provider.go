@@ -9,8 +9,10 @@ import (
 	"github.com/Bonial-International-GmbH/site24x7-go/location"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/cache"
-	"k8s.io/klog"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
+
+var log = logf.Log.WithName("site24x7-provider")
 
 // Provider manages Site24x7 website monitors.
 type Provider struct {
@@ -145,7 +147,7 @@ func (p *Provider) GetIPSourceRanges(model *models.Monitor) ([]string, error) {
 		return nil, err
 	}
 
-	klog.V(4).Infof("found %d ip addresses for location profile %q: %v", len(locationIPs), locationProfile.ProfileID, locationIPs)
+	log.V(1).Info("found ip addresses for location profile", "count", len(locationIPs), "profile-id", locationProfile.ProfileID, "ips", locationIPs)
 
 	sourceRanges := make([]string, len(locationIPs))
 	for i, ip := range locationIPs {

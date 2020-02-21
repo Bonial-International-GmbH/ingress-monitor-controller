@@ -48,15 +48,13 @@ The following CLI flags are available:
 
 | Flag                | Description                                                                           | Default                           |
 | ------              | -------------                                                                         | ---------                         |
+| `--debug`           | Enable debug logging.                                                                 | `false`                           |
 | `--provider`        | The provider to use for creating monitors.                                            | `site24x7`                        |
 | `--provider-config` | Location of the config file for the monitor providers.                                | `""`                              |
 | `--name-template`   | The template to use for the monitor name. Valid fields are: .IngressName, .Namespace. | `{{.Namespace}}-{{.IngressName}}` |
 | `--namespace`       | Namespace to watch. If empty, all namespaces are watched.                             | `""`                              |
 | `--creation-delay`  | Duration to wait after an ingress is created before creating the monitor for it.      | `0s`                              |
 | `--no-delete`       | If set, monitors will not be deleted if the ingress is deleted.                       | `false`                           |
-
-Additionally, the controller also exposes all flags supported by
-[klog](https://github.com/kubernetes/klog) to configure the logger.
 
 ### Provider Configuration File
 
