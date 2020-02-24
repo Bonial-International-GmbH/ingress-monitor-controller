@@ -4,6 +4,7 @@ import (
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/config"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/ingress"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/models"
+	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/monitor/metrics"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/provider"
 	"k8s.io/api/extensions/v1beta1"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -65,6 +66,7 @@ func NewService(options *config.Options) (Service, error) {
 func (s *service) EnsureMonitor(ing *v1beta1.Ingress) error {
 	err := ingress.Validate(ing)
 	if err != nil {
+		metrics.IngressValidationErrorsTotal.WithLabelValues(ing.Namespace, ing.Name).Inc()
 		log.V(1).Info("ignoring unsupported ingress", "namespace", ing.Namespace, "name", ing.Name, "error", err)
 		return nil
 	}
@@ -105,6 +107,7 @@ func (s *service) createMonitor(monitor *models.Monitor) error {
 		return err
 	}
 
+	metrics.MonitorsCreatedTotal.WithLabelValues(monitor.Name).Inc()
 	log.Info("monitor created", "monitor", monitor.Name)
 
 	return nil
@@ -118,6 +121,7 @@ func (s *service) updateMonitor(oldMonitor, newMonitor *models.Monitor) error {
 		return err
 	}
 
+	metrics.MonitorsUpdatedTotal.WithLabelValues(newMonitor.Name).Inc()
 	log.Info("monitor updated", "monitor", newMonitor.Name)
 
 	return nil
@@ -132,6 +136,7 @@ func (s *service) deleteMonitor(name string) error {
 		return err
 	}
 
+	metrics.MonitorsDeletedTotal.WithLabelValues(name).Inc()
 	log.Info("monitor deleted", "monitor", name)
 
 	return nil
@@ -161,6 +166,7 @@ func (s *service) buildMonitorModel(ing *v1beta1.Ingress) (*models.Monitor, erro
 func (s *service) GetProviderIPSourceRanges(ing *v1beta1.Ingress) ([]string, error) {
 	err := ingress.Validate(ing)
 	if err != nil {
+		metrics.IngressValidationErrorsTotal.WithLabelValues(ing.Namespace, ing.Name).Inc()
 		log.V(1).Info("ignoring unsupported ingress", "namespace", ing.Namespace, "name", ing.Name, "error", err)
 		return nil, nil
 	}

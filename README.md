@@ -160,3 +160,22 @@ annotation of an ingress if the following rules apply:
 - If the provider source ranges are not already present in the
   `nginx.ingress.kubernetes.io/whitelist-source-range` annotation, add them
   automatically.
+
+Limitations
+-----------
+
+The controller only creates monitors for the host defined in the first ingress
+rule (`spec.rules[0].host`), or if using TLS, for the first host in the TLS
+spec (`spec.tls[0].hosts[0]`), and only if those do not contain wildcards
+(`*`). If you want to create monitors for multiple hostnames, simply create
+dedicated ingress objects for them.
+
+Metrics
+-------
+
+Prometheus metrics are exposed at `0.0.0.0:8080/metrics`. Besides the metrics
+provided by the kubernetes
+[controller-runtime](https://github.com/kubernetes-sigs/controller-runtime) the
+ingress-monitor-controller also exposes metric stats about monitor creations,
+updates and deletions prefixed with `ingress_monitor_controller_*`, see
+[`pkg/monitor/metrics`](https://godoc.org/github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/monitor/metrics).
