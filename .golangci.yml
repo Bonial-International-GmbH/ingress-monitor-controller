@@ -1,12 +1,12 @@
 ---
-run:
-  deadline: 10m
-
-linters-settings:
-  errcheck:
-    ignore: flag:Set,fmt:[FS]?[Pp]rint*
 linters:
   enable:
     - whitespace
     - misspell
     - goimports
+issues:
+  exclude-rules:
+    # Exclude some staticcheck messages
+    - linters:
+        - staticcheck
+      text: "SA1019:"
