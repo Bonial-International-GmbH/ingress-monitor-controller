@@ -1,4 +1,4 @@
-FROM golang:1.13.4-alpine3.10 as builder
+FROM golang:1.16.3-alpine3.13 as builder
 
 WORKDIR /src
 
@@ -17,7 +17,7 @@ COPY pkg/ pkg/
 
 RUN make build
 
-FROM alpine:3.10
+FROM alpine:3.13
 
 RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
 
