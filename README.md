@@ -1,7 +1,7 @@
 ingress-monitor-controller
 ==========================
 
-[![Build Status](https://travis-ci.org/Bonial-International-GmbH/ingress-monitor-controller.svg?branch=master)](https://travis-ci.org/Bonial-International-GmbH/ingress-monitor-controller)
+[![Build Status](https://github.com/Bonial-International-GmbH/ingress-monitor-controller/actions/workflows/build.yml/badge.svg)](https://github.com/Bonial-International-GmbH/ingress-monitor-controller/actions/workflows/build.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Bonial-International-GmbH/ingress-monitor-controller?style=flat)](https://goreportcard.com/report/github.com/Bonial-International-GmbH/ingress-monitor-controller)
 [![GoDoc](https://godoc.org/github.com/Bonial-International-GmbH/ingress-monitor-controller?status.svg)](https://godoc.org/github.com/Bonial-International-GmbH/ingress-monitor-controller)
 
