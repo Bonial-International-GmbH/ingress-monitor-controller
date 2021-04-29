@@ -32,10 +32,10 @@ func NewIngressReconciler(client client.Client, monitorService monitor.Service, 
 
 // Reconcile creates, updates or deletes ingress monitors whenever an ingress
 // changes. It implements reconcile.Reconciler.
-func (r *IngressReconciler) Reconcile(req reconcile.Request) (reconcile.Result, error) {
+func (r *IngressReconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
 	ingress := &v1beta1.Ingress{}
 
-	err := r.Get(context.Background(), req.NamespacedName, ingress)
+	err := r.Get(ctx, req.NamespacedName, ingress)
 	if apierrors.IsNotFound(err) {
 		// The ingress was deleted. Construct a metadata-only ingress object
 		// just for monitor deletion.
@@ -57,7 +57,7 @@ func (r *IngressReconciler) Reconcile(req reconcile.Request) (reconcile.Result, 
 				return reconcile.Result{RequeueAfter: createAfter}, nil
 			}
 
-			err = r.handleCreateOrUpdate(ingress)
+			err = r.handleCreateOrUpdate(ctx, ingress)
 		} else {
 			err = r.monitorService.DeleteMonitor(ingress)
 		}
@@ -66,8 +66,8 @@ func (r *IngressReconciler) Reconcile(req reconcile.Request) (reconcile.Result, 
 	return reconcile.Result{}, err
 }
 
-func (r *IngressReconciler) handleCreateOrUpdate(ingress *v1beta1.Ingress) error {
-	updated, err := r.reconcileAnnotations(ingress)
+func (r *IngressReconciler) handleCreateOrUpdate(ctx context.Context, ingress *v1beta1.Ingress) error {
+	updated, err := r.reconcileAnnotations(ctx, ingress)
 	if err != nil || updated {
 		// In case of an error we return it here to force requeuing of the
 		// reconciliation request. If the ingress was updated, we return
@@ -88,7 +88,7 @@ func (r *IngressReconciler) handleCreateOrUpdate(ingress *v1beta1.Ingress) error
 // it will update the ingress object on the cluster and return true and the
 // first return value. The will effectively cause the creation of a new ingress
 // update event which is then picked up by the reconciler.
-func (r *IngressReconciler) reconcileAnnotations(ingress *v1beta1.Ingress) (updated bool, err error) {
+func (r *IngressReconciler) reconcileAnnotations(ctx context.Context, ingress *v1beta1.Ingress) (updated bool, err error) {
 	ingressCopy := ingress.DeepCopy()
 
 	updated, err = r.monitorService.AnnotateIngress(ingressCopy)
@@ -96,7 +96,7 @@ func (r *IngressReconciler) reconcileAnnotations(ingress *v1beta1.Ingress) (upda
 		return false, err
 	}
 
-	err = r.Update(context.Background(), ingressCopy)
+	err = r.Update(ctx, ingressCopy)
 	if err != nil {
 		return false, err
 	}

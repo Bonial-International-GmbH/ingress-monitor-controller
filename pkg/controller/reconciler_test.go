@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -168,7 +169,7 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 
 			r := NewIngressReconciler(client, svc, &test.options)
 
-			result, err := r.Reconcile(test.req)
+			result, err := r.Reconcile(context.Background(), test.req)
 			if test.expectError {
 				require.Error(t, err)
 			} else {
@@ -206,7 +207,7 @@ func TestIngressReconciler_Reconcile_DelayCreation(t *testing.T) {
 		},
 	}
 
-	result, err := r.Reconcile(req)
+	result, err := r.Reconcile(context.Background(), req)
 	require.NoError(t, err)
 
 	if result.RequeueAfter <= 0 {
