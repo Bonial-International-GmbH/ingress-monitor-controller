@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/Bonial-International-GmbH/site24x7-go v0.0.6
-	github.com/imdario/mergo v0.3.10
+	github.com/imdario/mergo v0.3.12
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/sirupsen/logrus v1.8.1
