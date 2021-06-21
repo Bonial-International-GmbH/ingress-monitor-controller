@@ -11,7 +11,7 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.7.0
 	k8s.io/api v0.19.2
-	k8s.io/apimachinery v0.19.2
+	k8s.io/apimachinery v0.20.8
 	sigs.k8s.io/controller-runtime v0.7.2
 	sigs.k8s.io/yaml v1.2.0
 )
