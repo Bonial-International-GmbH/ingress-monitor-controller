@@ -4,13 +4,13 @@ import (
 	"strings"
 
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/config"
-	"k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 )
 
 const nginxWhitelistSourceRangeAnnotation = "nginx.ingress.kubernetes.io/whitelist-source-range"
 
 // AnnotateIngress implements Service.
-func (s *service) AnnotateIngress(ingress *v1beta1.Ingress) (bool, error) {
+func (s *service) AnnotateIngress(ingress *networkingv1.Ingress) (bool, error) {
 	log := log.WithValues("namespace", ingress.Namespace, "name", ingress.Name)
 
 	if !shouldPatchSourceRangeWhitelist(ingress) {
@@ -48,7 +48,7 @@ func (s *service) AnnotateIngress(ingress *v1beta1.Ingress) (bool, error) {
 // monitor enabled and has configured the
 // nginx.ingress.kubernetes.io/whitelist-source-range annotation to only allow
 // traffic from whitelisted sources.
-func shouldPatchSourceRangeWhitelist(ingress *v1beta1.Ingress) bool {
+func shouldPatchSourceRangeWhitelist(ingress *networkingv1.Ingress) bool {
 	annotations := config.Annotations(ingress.Annotations)
 
 	if !annotations.BoolValue(config.AnnotationEnabled) {

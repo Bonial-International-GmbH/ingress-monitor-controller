@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"text/template"
 
-	"k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 )
 
 type templateArgs struct {
@@ -34,7 +34,7 @@ func NewNamer(nameTemplate string) (*Namer, error) {
 
 // Name builds a monitor name for given ingress. Returns an error if rendering
 // the name template fails.
-func (n *Namer) Name(ingress *v1beta1.Ingress) (string, error) {
+func (n *Namer) Name(ingress *networkingv1.Ingress) (string, error) {
 	var buf bytes.Buffer
 
 	err := n.template.Execute(&buf, templateArgs{

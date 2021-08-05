@@ -6,7 +6,7 @@ import (
 
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/config"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/monitor"
-	"k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -33,13 +33,13 @@ func NewIngressReconciler(client client.Client, monitorService monitor.Service, 
 // Reconcile creates, updates or deletes ingress monitors whenever an ingress
 // changes. It implements reconcile.Reconciler.
 func (r *IngressReconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
-	ingress := &v1beta1.Ingress{}
+	ingress := &networkingv1.Ingress{}
 
 	err := r.Get(ctx, req.NamespacedName, ingress)
 	if apierrors.IsNotFound(err) {
 		// The ingress was deleted. Construct a metadata-only ingress object
 		// just for monitor deletion.
-		ingress = &v1beta1.Ingress{
+		ingress = &networkingv1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      req.NamespacedName.Name,
 				Namespace: req.NamespacedName.Namespace,
@@ -66,7 +66,7 @@ func (r *IngressReconciler) Reconcile(ctx context.Context, req reconcile.Request
 	return reconcile.Result{}, err
 }
 
-func (r *IngressReconciler) handleCreateOrUpdate(ctx context.Context, ingress *v1beta1.Ingress) error {
+func (r *IngressReconciler) handleCreateOrUpdate(ctx context.Context, ingress *networkingv1.Ingress) error {
 	updated, err := r.reconcileAnnotations(ctx, ingress)
 	if err != nil || updated {
 		// In case of an error we return it here to force requeuing of the
@@ -88,7 +88,7 @@ func (r *IngressReconciler) handleCreateOrUpdate(ctx context.Context, ingress *v
 // it will update the ingress object on the cluster and return true and the
 // first return value. The will effectively cause the creation of a new ingress
 // update event which is then picked up by the reconciler.
-func (r *IngressReconciler) reconcileAnnotations(ctx context.Context, ingress *v1beta1.Ingress) (updated bool, err error) {
+func (r *IngressReconciler) reconcileAnnotations(ctx context.Context, ingress *networkingv1.Ingress) (updated bool, err error) {
 	ingressCopy := ingress.DeepCopy()
 
 	updated, err = r.monitorService.AnnotateIngress(ingressCopy)
