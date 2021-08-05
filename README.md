@@ -113,7 +113,7 @@ site24x7:
 To automatically create a website monitor for an ingress, it requires to be annotated with the `ingress-monitor.bonial.com/enabled` annotation:
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:

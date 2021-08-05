@@ -10,14 +10,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestService_EnsureMonitor(t *testing.T) {
 	tests := []struct {
 		name     string
-		ingress  *v1beta1.Ingress
+		ingress  *networkingv1.Ingress
 		options  config.Options
 		setup    func(*fake.Provider)
 		validate func(*testing.T, *fake.Provider)
@@ -25,7 +25,7 @@ func TestService_EnsureMonitor(t *testing.T) {
 	}{
 		{
 			name: "invalid ingress is ignored without error",
-			ingress: &v1beta1.Ingress{
+			ingress: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "kube-system",
@@ -37,7 +37,7 @@ func TestService_EnsureMonitor(t *testing.T) {
 		},
 		{
 			name: "non-existent monitor is created",
-			ingress: &v1beta1.Ingress{
+			ingress: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "kube-system",
@@ -45,8 +45,8 @@ func TestService_EnsureMonitor(t *testing.T) {
 						config.AnnotationEnabled: "true",
 					},
 				},
-				Spec: v1beta1.IngressSpec{
-					Rules: []v1beta1.IngressRule{
+				Spec: networkingv1.IngressSpec{
+					Rules: []networkingv1.IngressRule{
 						{Host: "foo.bar.baz"},
 					},
 				},
@@ -64,7 +64,7 @@ func TestService_EnsureMonitor(t *testing.T) {
 		},
 		{
 			name: "existing monitor is created",
-			ingress: &v1beta1.Ingress{
+			ingress: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "kube-system",
@@ -72,8 +72,8 @@ func TestService_EnsureMonitor(t *testing.T) {
 						config.AnnotationEnabled: "true",
 					},
 				},
-				Spec: v1beta1.IngressSpec{
-					Rules: []v1beta1.IngressRule{
+				Spec: networkingv1.IngressSpec{
+					Rules: []networkingv1.IngressRule{
 						{Host: "foo.bar.baz"},
 					},
 				},
@@ -96,7 +96,7 @@ func TestService_EnsureMonitor(t *testing.T) {
 		},
 		{
 			name: "does not create/update monitor if lookup fails",
-			ingress: &v1beta1.Ingress{
+			ingress: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "kube-system",
@@ -104,8 +104,8 @@ func TestService_EnsureMonitor(t *testing.T) {
 						config.AnnotationEnabled: "true",
 					},
 				},
-				Spec: v1beta1.IngressSpec{
-					Rules: []v1beta1.IngressRule{
+				Spec: networkingv1.IngressSpec{
+					Rules: []networkingv1.IngressRule{
 						{Host: "foo.bar.baz"},
 					},
 				},
@@ -147,7 +147,7 @@ func TestService_EnsureMonitor(t *testing.T) {
 func TestService_DeleteMonitor(t *testing.T) {
 	tests := []struct {
 		name     string
-		ingress  *v1beta1.Ingress
+		ingress  *networkingv1.Ingress
 		options  config.Options
 		setup    func(*fake.Provider)
 		validate func(*testing.T, *fake.Provider)
@@ -155,7 +155,7 @@ func TestService_DeleteMonitor(t *testing.T) {
 	}{
 		{
 			name: "delete monitor for ingress",
-			ingress: &v1beta1.Ingress{
+			ingress: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "kube-system",
@@ -170,7 +170,7 @@ func TestService_DeleteMonitor(t *testing.T) {
 		},
 		{
 			name: "deletion of nonexistant monitor does not error",
-			ingress: &v1beta1.Ingress{
+			ingress: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "kube-system",
@@ -186,7 +186,7 @@ func TestService_DeleteMonitor(t *testing.T) {
 		{
 			name:    "no deletions if NoDelete options is set",
 			options: config.Options{NoDelete: true},
-			ingress: &v1beta1.Ingress{
+			ingress: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "kube-system",
@@ -224,7 +224,7 @@ func TestService_DeleteMonitor(t *testing.T) {
 func TestService_GetProviderIPSourceRanges(t *testing.T) {
 	tests := []struct {
 		name        string
-		ingress     *v1beta1.Ingress
+		ingress     *networkingv1.Ingress
 		options     config.Options
 		setup       func(*fake.Provider)
 		expected    []string
@@ -232,7 +232,7 @@ func TestService_GetProviderIPSourceRanges(t *testing.T) {
 	}{
 		{
 			name: "unsupported ingresses produce empty result and no error",
-			ingress: &v1beta1.Ingress{
+			ingress: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "kube-system",
@@ -241,13 +241,13 @@ func TestService_GetProviderIPSourceRanges(t *testing.T) {
 		},
 		{
 			name: "invalid ingress returns error",
-			ingress: &v1beta1.Ingress{
+			ingress: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "kube-system",
 				},
-				Spec: v1beta1.IngressSpec{
-					Rules: []v1beta1.IngressRule{
+				Spec: networkingv1.IngressSpec{
+					Rules: []networkingv1.IngressRule{
 						{Host: "{invalidhost"},
 					},
 				},
@@ -256,13 +256,13 @@ func TestService_GetProviderIPSourceRanges(t *testing.T) {
 		},
 		{
 			name: "returns source ranges for ingress",
-			ingress: &v1beta1.Ingress{
+			ingress: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "kube-system",
 				},
-				Spec: v1beta1.IngressSpec{
-					Rules: []v1beta1.IngressRule{
+				Spec: networkingv1.IngressSpec{
+					Rules: []networkingv1.IngressRule{
 						{Host: "foo.bar.baz"},
 					},
 				},

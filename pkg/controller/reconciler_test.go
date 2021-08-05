@@ -9,7 +9,7 @@ import (
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/monitor/fake"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,7 +37,7 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 				},
 			},
 			setup: func(s *fake.Service) {
-				s.On("DeleteMonitor", &v1beta1.Ingress{
+				s.On("DeleteMonitor", &networkingv1.Ingress{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "foo",
 						Namespace: "kube-system",
@@ -54,7 +54,7 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 				},
 			},
 			clientFn: func() client.Client {
-				return fakeclient.NewFakeClient(&v1beta1.Ingress{
+				return fakeclient.NewFakeClient(&networkingv1.Ingress{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "bar",
 						Namespace: "kube-system",
@@ -65,10 +65,10 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 				})
 			},
 			setup: func(s *fake.Service) {
-				ing := &v1beta1.Ingress{
+				ing := &networkingv1.Ingress{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Ingress",
-						APIVersion: "extensions/v1beta1",
+						APIVersion: "networking.k8s.io/v1",
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "bar",
@@ -93,7 +93,7 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 				},
 			},
 			clientFn: func() client.Client {
-				return fakeclient.NewFakeClient(&v1beta1.Ingress{
+				return fakeclient.NewFakeClient(&networkingv1.Ingress{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "bar",
 						Namespace: "kube-system",
@@ -104,10 +104,10 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 				})
 			},
 			setup: func(s *fake.Service) {
-				ing := &v1beta1.Ingress{
+				ing := &networkingv1.Ingress{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Ingress",
-						APIVersion: "extensions/v1beta1",
+						APIVersion: "networking.k8s.io/v1",
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "bar",
@@ -131,7 +131,7 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 				},
 			},
 			clientFn: func() client.Client {
-				return fakeclient.NewFakeClient(&v1beta1.Ingress{
+				return fakeclient.NewFakeClient(&networkingv1.Ingress{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "bar",
 						Namespace: "kube-system",
@@ -139,10 +139,10 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 				})
 			},
 			setup: func(s *fake.Service) {
-				s.On("DeleteMonitor", &v1beta1.Ingress{
+				s.On("DeleteMonitor", &networkingv1.Ingress{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Ingress",
-						APIVersion: "extensions/v1beta1",
+						APIVersion: "networking.k8s.io/v1",
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "bar",
@@ -188,7 +188,7 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 }
 
 func TestIngressReconciler_Reconcile_DelayCreation(t *testing.T) {
-	client := fakeclient.NewFakeClient(&v1beta1.Ingress{
+	client := fakeclient.NewFakeClient(&networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "bar",
 			Namespace: "kube-system",

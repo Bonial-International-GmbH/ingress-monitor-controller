@@ -7,7 +7,6 @@ metadata:
   name: ingress-monitor-controller
 rules:
   - apiGroups:
-      - extensions
       - networking.k8s.io
     resources:
       - ingresses

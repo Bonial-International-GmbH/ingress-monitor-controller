@@ -2,26 +2,26 @@ package fake
 
 import (
 	"github.com/stretchr/testify/mock"
-	"k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 )
 
 type Service struct {
 	mock.Mock
 }
 
-func (s *Service) EnsureMonitor(ingress *v1beta1.Ingress) error {
+func (s *Service) EnsureMonitor(ingress *networkingv1.Ingress) error {
 	args := s.Called(ingress)
 
 	return args.Error(0)
 }
 
-func (s *Service) DeleteMonitor(ingress *v1beta1.Ingress) error {
+func (s *Service) DeleteMonitor(ingress *networkingv1.Ingress) error {
 	args := s.Called(ingress)
 
 	return args.Error(0)
 }
 
-func (s *Service) GetProviderIPSourceRanges(ingress *v1beta1.Ingress) ([]string, error) {
+func (s *Service) GetProviderIPSourceRanges(ingress *networkingv1.Ingress) ([]string, error) {
 	args := s.Called(ingress)
 
 	var ips []string
@@ -32,7 +32,7 @@ func (s *Service) GetProviderIPSourceRanges(ingress *v1beta1.Ingress) ([]string,
 	return ips, args.Error(1)
 }
 
-func (s *Service) AnnotateIngress(ingress *v1beta1.Ingress) (updated bool, err error) {
+func (s *Service) AnnotateIngress(ingress *networkingv1.Ingress) (updated bool, err error) {
 	args := s.Called(ingress)
 
 	return args.Bool(0), args.Error(1)

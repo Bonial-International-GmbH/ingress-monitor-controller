@@ -7,7 +7,7 @@ import (
 
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/config"
 	"github.com/pkg/errors"
-	"k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 // supports TLS, the TLS hosts must not contain wildcards. The ingress must
 // have at least one rule and the rules' host must not contain wildcards (if
 // the ingress does not support TLS).
-func Validate(ingress *v1beta1.Ingress) error {
+func Validate(ingress *networkingv1.Ingress) error {
 	if supportsTLS(ingress) && containsWildcard(ingress.Spec.TLS[0].Hosts[0]) {
 		return errors.Errorf("ingress TLS host %q contains wildcards", ingress.Spec.TLS[0].Hosts[0])
 	}
@@ -37,7 +37,7 @@ func Validate(ingress *v1beta1.Ingress) error {
 
 // BuildMonitorURL builds the url that should be monitored on the ingress.
 // Unvalidated ingresses may cause BuildMonitorURL to panic.
-func BuildMonitorURL(ingress *v1beta1.Ingress) (string, error) {
+func BuildMonitorURL(ingress *networkingv1.Ingress) (string, error) {
 	host := buildHostURL(ingress)
 
 	url, err := url.Parse(host)
@@ -53,7 +53,7 @@ func BuildMonitorURL(ingress *v1beta1.Ingress) (string, error) {
 	return url.String(), nil
 }
 
-func buildHostURL(ingress *v1beta1.Ingress) string {
+func buildHostURL(ingress *networkingv1.Ingress) string {
 	if supportsTLS(ingress) {
 		return fmt.Sprintf("https://%s", ingress.Spec.TLS[0].Hosts[0])
 	}
@@ -65,11 +65,11 @@ func buildHostURL(ingress *v1beta1.Ingress) string {
 	return fmt.Sprintf("http://%s", ingress.Spec.Rules[0].Host)
 }
 
-func supportsTLS(ingress *v1beta1.Ingress) bool {
+func supportsTLS(ingress *networkingv1.Ingress) bool {
 	return len(ingress.Spec.TLS) > 0 && len(ingress.Spec.TLS[0].Hosts) > 0 && len(ingress.Spec.TLS[0].Hosts[0]) > 0
 }
 
-func forceHTTPS(ingress *v1beta1.Ingress) bool {
+func forceHTTPS(ingress *networkingv1.Ingress) bool {
 	annotations := config.Annotations(ingress.Annotations)
 
 	return annotations.BoolValue(config.AnnotationForceHTTPS) || annotations.BoolValue(nginxForceSSLRedirectAnnotation)

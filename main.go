@@ -11,7 +11,7 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	runtime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	restconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -99,7 +99,7 @@ func Run(options *config.Options) error {
 	err = builder.
 		ControllerManagedBy(mgr).
 		Named("ingress-monitor-controller").
-		For(&v1beta1.Ingress{}).
+		For(&networkingv1.Ingress{}).
 		Complete(reconciler)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create controller")
