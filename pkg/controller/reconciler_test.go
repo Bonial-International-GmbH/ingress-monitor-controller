@@ -76,6 +76,7 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 						Annotations: map[string]string{
 							config.AnnotationEnabled: "true",
 						},
+						ResourceVersion: "999",
 					},
 				}
 
@@ -114,6 +115,7 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 						Annotations: map[string]string{
 							config.AnnotationEnabled: "true",
 						},
+						ResourceVersion: "999",
 					},
 				}
 
@@ -143,8 +145,9 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 						APIVersion: "extensions/v1beta1",
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "bar",
-						Namespace: "kube-system",
+						Name:            "bar",
+						Namespace:       "kube-system",
+						ResourceVersion: "999",
 					},
 				}).Return(nil)
 			},
