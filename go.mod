@@ -1,6 +1,6 @@
 module github.com/Bonial-International-GmbH/ingress-monitor-controller
 
-go 1.17
+go 1.19
 
 require (
 	github.com/Bonial-International-GmbH/site24x7-go v0.0.6
