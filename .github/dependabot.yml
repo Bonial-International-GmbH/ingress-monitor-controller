@@ -23,3 +23,14 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "08:00"
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "chore"
+      include: "scope"
