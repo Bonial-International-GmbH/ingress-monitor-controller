@@ -55,6 +55,10 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 			},
 			clientFn: func() client.Client {
 				return fakeclient.NewFakeClient(&networkingv1.Ingress{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Ingress",
+						APIVersion: "networking.k8s.io/v1",
+					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "bar",
 						Namespace: "kube-system",
@@ -94,6 +98,10 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 			},
 			clientFn: func() client.Client {
 				return fakeclient.NewFakeClient(&networkingv1.Ingress{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Ingress",
+						APIVersion: "networking.k8s.io/v1",
+					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "bar",
 						Namespace: "kube-system",
@@ -132,6 +140,10 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 			},
 			clientFn: func() client.Client {
 				return fakeclient.NewFakeClient(&networkingv1.Ingress{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Ingress",
+						APIVersion: "networking.k8s.io/v1",
+					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "bar",
 						Namespace: "kube-system",
@@ -189,6 +201,10 @@ func TestIngressReconciler_Reconcile(t *testing.T) {
 
 func TestIngressReconciler_Reconcile_DelayCreation(t *testing.T) {
 	client := fakeclient.NewFakeClient(&networkingv1.Ingress{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Ingress",
+			APIVersion: "networking.k8s.io/v1",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "bar",
 			Namespace: "kube-system",
