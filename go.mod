@@ -10,8 +10,8 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
-	k8s.io/api v0.29.2
-	k8s.io/apimachinery v0.29.2
+	k8s.io/api v0.29.3
+	k8s.io/apimachinery v0.29.3
 	sigs.k8s.io/controller-runtime v0.17.2
 	sigs.k8s.io/yaml v1.4.0
 )
