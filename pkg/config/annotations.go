@@ -36,6 +36,16 @@ const (
 	// rule constants: https://www.site24x7.com/help/api/#action_constants.
 	AnnotationSite24x7Actions = "site24x7.ingress-monitor.bonial.com/actions"
 
+	// AnnotationSite24x7ActionDown configures the actions that should be
+	// executed if the monitor goes down. Can be either an action
+	// ID or the name of the action.
+	AnnotationSite24x7ActionDown = "site24x7.ingress-monitor.bonial.com/action-down"
+
+	// AnnotationSite24x7ActionUp configures the actions that should be
+	// executed if the monitor goes up. Can be either an action ID or the name
+	// of the action.
+	AnnotationSite24x7ActionUp = "site24x7.ingress-monitor.bonial.com/action-up"
+
 	// AnnotationSite24x7AuthPass sets the password if basic auth is required.
 	AnnotationSite24x7AuthPass = "site24x7.ingress-monitor.bonial.com/auth-pass"
 
