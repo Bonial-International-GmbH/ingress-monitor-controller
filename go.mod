@@ -1,7 +1,7 @@
 module github.com/Bonial-International-GmbH/ingress-monitor-controller
 
 go 1.22
-toolchain go1.22.3
+toolchain go1.22.4
 
 require (
 	github.com/Bonial-International-GmbH/site24x7-go v0.0.6
@@ -9,7 +9,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.19.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	k8s.io/api v0.30.1
 	k8s.io/apimachinery v0.30.1
