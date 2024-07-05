@@ -1,7 +1,7 @@
 module github.com/Bonial-International-GmbH/ingress-monitor-controller
 
 go 1.22
-toolchain go1.22.3
+toolchain go1.22.4
 
 require (
 	github.com/Bonial-International-GmbH/site24x7-go v0.0.6
@@ -13,7 +13,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	k8s.io/api v0.30.1
 	k8s.io/apimachinery v0.30.1
-	sigs.k8s.io/controller-runtime v0.18.3
+	sigs.k8s.io/controller-runtime v0.18.4
 	sigs.k8s.io/yaml v1.4.0
 )
 
