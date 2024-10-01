@@ -17,7 +17,7 @@ COPY pkg/ pkg/
 
 RUN make build
 
-FROM alpine:3.20.2
+FROM alpine:3.20.3
 
 RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
 
