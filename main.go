@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
+	"dario.cat/mergo"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/config"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/controller"
 	"github.com/Bonial-International-GmbH/ingress-monitor-controller/pkg/monitor"
-	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	networkingv1 "k8s.io/api/networking/v1"
