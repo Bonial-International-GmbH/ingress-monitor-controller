@@ -5,7 +5,7 @@ go 1.24
 toolchain go1.24.1
 
 require (
-	dario.cat/mergo v1.0.1
+	dario.cat/mergo v1.0.2
 	github.com/Bonial-International-GmbH/site24x7-go v0.0.6
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.22.0
